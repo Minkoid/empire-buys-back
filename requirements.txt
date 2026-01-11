@@ -1,0 +1,9 @@
+# AIModified:2026-01-11T14:40:50Z
+# QQQ Pullback Strategy Backtesting Tool - Dependencies
+
+streamlit>=1.28.0
+pandas>=2.0.0
+numpy>=1.24.0
+plotly>=5.18.0
+yfinance>=0.2.30
+
