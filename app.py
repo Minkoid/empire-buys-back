@@ -1,4 +1,4 @@
-# AIModified:2026-01-29T14:48:01Z
+# AIModified:2026-01-29T15:22:18Z
 """
 S&S Analytics - Pullback Strategy Backtesting Tool
 
@@ -229,7 +229,7 @@ def get_ticker_data(ticker: str, source: str, start_date: str = "2000-01-01"):
         return load_data_from_csv(source)
 
 
-def create_equity_chart(result, df, ticker: str = "QQQ", show_ema: bool = True):
+def create_equity_chart(result, df, ticker: str = "QQQ", show_ema: bool = True, show_trend_ma: bool = False):
     """Create the main equity curve and price chart."""
     fig = make_subplots(
         rows=3, cols=1,
@@ -275,6 +275,20 @@ def create_equity_chart(result, df, ticker: str = "QQQ", show_ema: bool = True):
                 name='EMA',
                 line=dict(color='#a855f7', width=1.5, dash='solid'),
                 opacity=0.8
+            ),
+            row=2, col=1
+        )
+    
+    # Trend MA line
+    if show_trend_ma and 'Trend_MA' in result.equity_curve.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=result.equity_curve.index,
+                y=result.equity_curve['Trend_MA'],
+                mode='lines',
+                name='Trend MA',
+                line=dict(color='#14b8a6', width=2, dash='solid'),
+                opacity=0.9
             ),
             row=2, col=1
         )
@@ -561,6 +575,36 @@ def main():
         
         st.markdown("---")
         
+        # Trend Filter
+        st.markdown("### 📈 Trend Filter")
+        
+        use_trend_filter = st.toggle(
+            "Only enter if MA is rising",
+            value=False,
+            help="Only enter trades when the moving average is trending upward"
+        )
+        
+        if use_trend_filter:
+            trend_ma_period = st.select_slider(
+                "Trend MA Period",
+                options=[20, 50, 100, 150, 200],
+                value=50,
+                help="Period for the trend moving average"
+            )
+            
+            trend_lookback = st.slider(
+                "Lookback Days",
+                min_value=1,
+                max_value=20,
+                value=5,
+                help="Compare MA to X days ago to determine if rising"
+            )
+        else:
+            trend_ma_period = 50
+            trend_lookback = 5
+        
+        st.markdown("---")
+        
         # Exit Mode Toggle
         st.markdown("### 📤 Exit Strategy")
         
@@ -683,6 +727,7 @@ def main():
             # Store settings in session
             st.session_state['ticker'] = selected_ticker
             st.session_state['show_ema'] = use_atr_entry
+            st.session_state['show_trend_ma'] = use_trend_filter
             
             # Configure backtest
             config = BacktestConfig(
@@ -690,6 +735,9 @@ def main():
                 use_atr_entry=use_atr_entry,
                 pullback_pct=pullback_pct,
                 atr_entry_multiplier=atr_entry_multiplier,
+                use_trend_filter=use_trend_filter,
+                trend_ma_period=trend_ma_period,
+                trend_lookback=trend_lookback,
                 exit_mode=exit_mode,
                 rebound_pct=rebound_pct,
                 atr_exit_multiplier=atr_exit_multiplier,
@@ -803,7 +851,8 @@ def main():
         st.markdown('<div class="section-header">📈 Charts</div>', unsafe_allow_html=True)
         
         show_ema = st.session_state.get('show_ema', False)
-        equity_chart = create_equity_chart(result, df, selected_ticker, show_ema=show_ema)
+        show_trend_ma = st.session_state.get('show_trend_ma', False)
+        equity_chart = create_equity_chart(result, df, selected_ticker, show_ema=show_ema, show_trend_ma=show_trend_ma)
         st.plotly_chart(equity_chart, use_container_width=True)
         
         # Additional charts
@@ -906,6 +955,12 @@ def main():
             - **ATH Recovery**: Exit when price returns to the previous ATH
             - **Percent Rebound**: Exit when price rebounds Y% from entry
             - **ATR Rebound**: Exit when price rises Y ATRs from entry
+            
+            ### Trend Filter
+            
+            - **Rising MA Filter**: Only enter if the trend moving average is rising
+            - Compare current MA to X days ago
+            - Helps avoid entering during downtrends
             
             ### Risk Management
             
