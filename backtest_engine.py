@@ -1,4 +1,4 @@
-# AIModified:2026-01-29T14:48:01Z
+# AIModified:2026-01-29T15:22:18Z
 """
 S&S Analytics - Pullback Strategy Backtesting Engine
 
@@ -82,6 +82,11 @@ class BacktestConfig:
     
     # ATR-based entry settings
     atr_entry_multiplier: float = 1.5  # Enter when price is X ATRs below EMA
+    
+    # Trend filter - only enter if MA is rising
+    use_trend_filter: bool = False  # Only enter if trend MA is rising
+    trend_ma_period: int = 50  # Period for trend moving average
+    trend_lookback: int = 5  # Days to compare for "rising" check
     
     # Exit mode
     exit_mode: ExitMode = ExitMode.ATH_RECOVERY
@@ -168,6 +173,7 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
     # Calculate indicators
     df['EMA'] = calculate_ema(df['Close'], config.ema_period)
     df['ATR'] = calculate_atr(df, config.atr_period)
+    df['Trend_MA'] = calculate_ema(df['Close'], config.trend_ma_period)
     
     # Initialize tracking variables
     capital = config.initial_capital
@@ -204,6 +210,8 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
         else:
             current_equity = capital
         
+        trend_ma = row['Trend_MA']
+        
         equity_history.append({
             'Date': date,
             'Equity': current_equity,
@@ -211,6 +219,7 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
             'ATH': ath,
             'EMA': ema,
             'ATR': atr,
+            'Trend_MA': trend_ma,
             'In_Position': in_position
         })
         
@@ -218,7 +227,7 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
         if i < start_idx:
             continue
         
-        if pd.isna(atr) or pd.isna(ema):
+        if pd.isna(atr) or pd.isna(ema) or pd.isna(trend_ma):
             continue
         
         if in_position:
@@ -295,8 +304,8 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
             
             # ATH pullback check
             if config.use_ath_entry:
-                pullback_pct = (ath - price) / ath * 100
-                if pullback_pct >= config.pullback_pct:
+                pullback_pct_val = (ath - price) / ath * 100
+                if pullback_pct_val >= config.pullback_pct:
                     ath_signal = True
             
             # ATR pullback check
@@ -305,9 +314,18 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
                 if atr_distance >= config.atr_entry_multiplier:
                     atr_signal = True
             
-            # Enter if EITHER signal is true (OR logic)
+            # Check if either entry signal triggered
             if ath_signal or atr_signal:
-                entry_signal = True
+                # Apply trend filter if enabled
+                if config.use_trend_filter:
+                    # Check if trend MA is rising (compare to X days ago)
+                    lookback_idx = max(0, i - config.trend_lookback)
+                    trend_ma_prev = df['Trend_MA'].iloc[lookback_idx]
+                    if not pd.isna(trend_ma_prev) and trend_ma > trend_ma_prev:
+                        entry_signal = True  # Trend is rising, allow entry
+                    # else: trend not rising, don't enter
+                else:
+                    entry_signal = True  # No trend filter, allow entry
             
             if entry_signal:
                 # Enter position
