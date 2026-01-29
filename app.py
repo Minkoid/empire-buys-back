@@ -1,9 +1,8 @@
-# AIModified:2026-01-11T14:57:01Z
+# AIModified:2026-01-29T10:57:45Z
 """
-The Empire Buys Back - Pullback Strategy Backtesting Tool
+S&S Analytics - Pullback Strategy Backtesting Tool
 
 A Streamlit application for backtesting pullback-based trading strategies.
-May the profits be with you!
 """
 
 import streamlit as st
@@ -36,88 +35,67 @@ AVAILABLE_TICKERS = {
 
 # Page configuration
 st.set_page_config(
-    page_title="The Empire Buys Back",
-    page_icon="⚔️",
+    page_title="S&S Analytics",
+    page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS with Star Wars theme
+# Professional CSS theme
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Orbitron:wght@400;500;600;700;800;900&family=Outfit:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
     
     :root {
-        --bg-primary: #000000;
-        --bg-secondary: #0a0a0a;
-        --bg-card: #1a1a2e;
-        --accent-green: #00ff00;
-        --accent-red: #ff0000;
-        --accent-blue: #00d4ff;
-        --accent-amber: #ffe81f;
-        --accent-imperial: #ff4444;
-        --text-primary: #ffe81f;
-        --text-secondary: #8b8b8b;
-        --border-color: #333355;
-        --glow-yellow: rgba(255, 232, 31, 0.3);
+        --bg-primary: #0f1419;
+        --bg-secondary: #1a1f26;
+        --bg-card: #232a33;
+        --accent-green: #22c55e;
+        --accent-red: #ef4444;
+        --accent-blue: #3b82f6;
+        --accent-amber: #f59e0b;
+        --accent-teal: #14b8a6;
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
+        --border-color: #334155;
     }
     
     .stApp {
-        background: linear-gradient(180deg, #000000 0%, #0a0a1a 50%, #000000 100%);
-        background-attachment: fixed;
-    }
-    
-    .stApp::before {
-        content: "";
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-image: 
-            radial-gradient(white 1px, transparent 1px),
-            radial-gradient(white 1px, transparent 1px);
-        background-size: 100px 100px, 50px 50px;
-        background-position: 0 0, 25px 25px;
-        opacity: 0.03;
-        pointer-events: none;
-        z-index: 0;
+        background: linear-gradient(135deg, var(--bg-primary) 0%, #1a1f2e 100%);
     }
     
     .main .block-container {
         padding-top: 2rem;
         max-width: 1400px;
-        position: relative;
-        z-index: 1;
     }
     
     h1, h2, h3 {
-        font-family: 'Outfit', sans-serif !important;
-        font-weight: 700 !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 600 !important;
     }
     
-    .star-wars-title {
-        font-family: 'Orbitron', monospace !important;
-        font-weight: 900 !important;
-        font-size: 2.8rem !important;
-        color: #ffe81f !important;
-        text-shadow: 
-            0 0 10px rgba(255, 232, 31, 0.5),
-            0 0 20px rgba(255, 232, 31, 0.3),
-            0 0 30px rgba(255, 232, 31, 0.2);
-        letter-spacing: 0.15em;
-        text-transform: uppercase;
+    .app-title {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 700 !important;
+        font-size: 2.2rem !important;
+        color: #f8fafc !important;
+        letter-spacing: -0.02em;
+    }
+    
+    .app-subtitle {
+        font-family: 'Inter', sans-serif;
+        font-size: 1rem;
+        color: #94a3b8;
+        font-weight: 400;
     }
     
     .metric-card {
-        background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
-        border: 1px solid #333355;
-        border-radius: 8px;
+        background: linear-gradient(145deg, var(--bg-card) 0%, #2a323d 100%);
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
         padding: 1.25rem;
         margin: 0.5rem 0;
-        box-shadow: 
-            0 4px 20px rgba(0, 0, 0, 0.5),
-            inset 0 1px 0 rgba(255, 232, 31, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
     
     .metric-value {
@@ -128,76 +106,79 @@ st.markdown("""
     }
     
     .metric-label {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 0.75rem;
-        color: #8b8b8b;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.8rem;
+        color: #94a3b8;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
+        letter-spacing: 0.05em;
+        font-weight: 500;
     }
     
-    .positive { color: #00ff00 !important; text-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
-    .negative { color: #ff4444 !important; text-shadow: 0 0 10px rgba(255, 68, 68, 0.3); }
-    .neutral { color: #00d4ff !important; text-shadow: 0 0 10px rgba(0, 212, 255, 0.3); }
-    .warning { color: #ffe81f !important; text-shadow: 0 0 10px rgba(255, 232, 31, 0.3); }
-    
-    .trade-table {
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.85rem;
-    }
+    .positive { color: #22c55e !important; }
+    .negative { color: #ef4444 !important; }
+    .neutral { color: #3b82f6 !important; }
+    .warning { color: #f59e0b !important; }
     
     .section-header {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 1.3rem;
+        font-family: 'Inter', sans-serif;
+        font-size: 1.25rem;
         font-weight: 600;
-        color: #ffe81f;
+        color: #f8fafc;
         margin: 2rem 0 1rem 0;
         padding-bottom: 0.5rem;
-        border-bottom: 2px solid #ffe81f;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        text-shadow: 0 0 10px rgba(255, 232, 31, 0.3);
+        border-bottom: 2px solid #3b82f6;
     }
     
-    /* Sidebar styling - Imperial theme */
+    /* Sidebar styling */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
-        border-right: 1px solid #333355;
+        background: linear-gradient(180deg, #1a1f26 0%, #0f1419 100%);
+        border-right: 1px solid #334155;
     }
     
     [data-testid="stSidebar"] .stMarkdown {
-        color: #ffe81f;
+        color: #f8fafc;
     }
     
     /* Input styling */
     .stSlider > div > div {
-        background-color: #1a1a2e;
+        background-color: var(--bg-card);
     }
     
     .stNumberInput input {
         font-family: 'JetBrains Mono', monospace;
-        background-color: #1a1a2e;
-        color: #ffe81f;
-        border: 1px solid #333355;
-    }
-    
-    .stSelectbox > div > div {
-        background-color: #1a1a2e;
     }
     
     /* Button styling */
     .stButton > button {
-        background: linear-gradient(180deg, #ffe81f 0%, #ccb800 100%) !important;
-        color: #000000 !important;
-        font-family: 'Orbitron', sans-serif !important;
-        font-weight: 700 !important;
-        letter-spacing: 0.1em !important;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+        color: #ffffff !important;
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 600 !important;
         border: none !important;
-        box-shadow: 0 0 20px rgba(255, 232, 31, 0.3) !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
     }
     
     .stButton > button:hover {
-        box-shadow: 0 0 30px rgba(255, 232, 31, 0.5) !important;
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    }
+    
+    /* Logo styling */
+    .logo-container {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    
+    .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #3b82f6 0%, #14b8a6 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -244,16 +225,16 @@ def create_equity_chart(result, df, ticker: str = "QQQ"):
         subplot_titles=("Portfolio Equity", f"{ticker} Price with Trade Markers", "Drawdown")
     )
     
-    # Equity curve - Imperial Green
+    # Equity curve
     fig.add_trace(
         go.Scatter(
             x=result.equity_curve.index,
             y=result.equity_curve['Equity'],
             mode='lines',
-            name='Imperial Credits',
-            line=dict(color='#00ff00', width=2),
+            name='Portfolio Value',
+            line=dict(color='#22c55e', width=2),
             fill='tozeroy',
-            fillcolor='rgba(0, 255, 0, 0.1)'
+            fillcolor='rgba(34, 197, 94, 0.1)'
         ),
         row=1, col=1
     )
@@ -265,19 +246,19 @@ def create_equity_chart(result, df, ticker: str = "QQQ"):
             y=result.equity_curve['Price'],
             mode='lines',
             name=f'{ticker} Price',
-            line=dict(color='#00d4ff', width=1.5)
+            line=dict(color='#3b82f6', width=1.5)
         ),
         row=2, col=1
     )
     
-    # ATH line - Star Wars Yellow
+    # ATH line
     fig.add_trace(
         go.Scatter(
             x=result.equity_curve.index,
             y=result.equity_curve['ATH'],
             mode='lines',
             name='All-Time High',
-            line=dict(color='#ffe81f', width=1, dash='dot'),
+            line=dict(color='#f59e0b', width=1, dash='dot'),
             opacity=0.7
         ),
         row=2, col=1
@@ -285,7 +266,7 @@ def create_equity_chart(result, df, ticker: str = "QQQ"):
     
     # Trade markers
     for trade in result.trades:
-        # Entry marker - Green lightsaber
+        # Entry marker
         fig.add_trace(
             go.Scatter(
                 x=[trade.entry_date],
@@ -295,17 +276,17 @@ def create_equity_chart(result, df, ticker: str = "QQQ"):
                 marker=dict(
                     symbol='triangle-up',
                     size=12,
-                    color='#00ff00',
-                    line=dict(color='#003300', width=1)
+                    color='#22c55e',
+                    line=dict(color='#166534', width=1)
                 ),
                 showlegend=False,
-                hovertemplate=f"⚔️ EXECUTE ORDER<br>Date: {trade.entry_date.strftime('%Y-%m-%d')}<br>Price: ${trade.entry_price:.2f}<extra></extra>"
+                hovertemplate=f"BUY<br>Date: {trade.entry_date.strftime('%Y-%m-%d')}<br>Price: ${trade.entry_price:.2f}<extra></extra>"
             ),
             row=2, col=1
         )
         
-        # Exit marker - Red (loss) or Green (win)
-        exit_color = '#00ff00' if trade.is_win else '#ff4444'
+        # Exit marker
+        exit_color = '#22c55e' if trade.is_win else '#ef4444'
         fig.add_trace(
             go.Scatter(
                 x=[trade.exit_date],
@@ -319,59 +300,59 @@ def create_equity_chart(result, df, ticker: str = "QQQ"):
                     line=dict(color='#333333', width=1)
                 ),
                 showlegend=False,
-                hovertemplate=f"🛡️ EXIT ({trade.exit_reason})<br>Date: {trade.exit_date.strftime('%Y-%m-%d')}<br>Price: ${trade.exit_price:.2f}<br>P&L: {trade.pnl_percent:+.2f}%<extra></extra>"
+                hovertemplate=f"SELL ({trade.exit_reason})<br>Date: {trade.exit_date.strftime('%Y-%m-%d')}<br>Price: ${trade.exit_price:.2f}<br>P&L: {trade.pnl_percent:+.2f}%<extra></extra>"
             ),
             row=2, col=1
         )
     
-    # Drawdown chart - Imperial Red
+    # Drawdown chart
     fig.add_trace(
         go.Scatter(
             x=result.equity_curve.index,
             y=result.equity_curve['Drawdown_Pct'],
             mode='lines',
-            name='Dark Side Losses',
-            line=dict(color='#ff4444', width=1.5),
+            name='Drawdown',
+            line=dict(color='#ef4444', width=1.5),
             fill='tozeroy',
-            fillcolor='rgba(255, 68, 68, 0.2)'
+            fillcolor='rgba(239, 68, 68, 0.2)'
         ),
         row=3, col=1
     )
     
-    # Update layout - Star Wars dark theme
+    # Update layout
     fig.update_layout(
         height=800,
         template='plotly_dark',
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(10, 10, 26, 0.9)',
-        font=dict(family="JetBrains Mono, monospace", color='#ffe81f'),
+        plot_bgcolor='rgba(15, 20, 25, 0.9)',
+        font=dict(family="Inter, sans-serif", color='#f8fafc'),
         legend=dict(
             orientation="h",
             yanchor="bottom",
             y=1.02,
             xanchor="right",
             x=1,
-            bgcolor='rgba(26, 26, 46, 0.9)',
-            font=dict(color='#ffe81f')
+            bgcolor='rgba(35, 42, 51, 0.9)',
+            font=dict(color='#f8fafc')
         ),
         margin=dict(l=60, r=20, t=80, b=40)
     )
     
-    # Update axes - Star Wars grid
+    # Update axes
     fig.update_xaxes(
-        gridcolor='rgba(51, 51, 85, 0.5)',
+        gridcolor='rgba(51, 65, 85, 0.5)',
         showgrid=True,
         zeroline=False
     )
     fig.update_yaxes(
-        gridcolor='rgba(51, 51, 85, 0.5)',
+        gridcolor='rgba(51, 65, 85, 0.5)',
         showgrid=True,
         zeroline=False
     )
     
-    fig.update_yaxes(title_text="Imperial Credits ($)", row=1, col=1)
+    fig.update_yaxes(title_text="Equity ($)", row=1, col=1)
     fig.update_yaxes(title_text="Price ($)", row=2, col=1)
-    fig.update_yaxes(title_text="Dark Side (%)", row=3, col=1)
+    fig.update_yaxes(title_text="Drawdown (%)", row=3, col=1)
     
     return fig
 
@@ -389,26 +370,26 @@ def create_trade_distribution_chart(result):
         x=returns,
         nbinsx=20,
         marker=dict(
-            color='#00d4ff',
-            line=dict(color='#0088aa', width=1)
+            color='#3b82f6',
+            line=dict(color='#1e40af', width=1)
         ),
         opacity=0.8
     ))
     
     fig.update_layout(
-        title="⚔️ Battle Outcomes Distribution",
+        title="Trade Returns Distribution",
         xaxis_title="Return (%)",
         yaxis_title="Frequency",
         height=350,
         template='plotly_dark',
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(10, 10, 26, 0.9)',
-        font=dict(family="JetBrains Mono, monospace", color='#ffe81f'),
+        plot_bgcolor='rgba(15, 20, 25, 0.9)',
+        font=dict(family="Inter, sans-serif", color='#f8fafc'),
         margin=dict(l=60, r=20, t=60, b=40)
     )
     
-    fig.update_xaxes(gridcolor='rgba(51, 51, 85, 0.5)')
-    fig.update_yaxes(gridcolor='rgba(51, 51, 85, 0.5)')
+    fig.update_xaxes(gridcolor='rgba(51, 65, 85, 0.5)')
+    fig.update_yaxes(gridcolor='rgba(51, 65, 85, 0.5)')
     
     return fig
 
@@ -425,8 +406,7 @@ def create_yearly_returns_chart(result):
     if len(yearly_returns) == 0:
         return None
     
-    # Green for wins, Red for losses - lightsaber colors
-    colors = ['#00ff00' if r > 0 else '#ff4444' for r in yearly_returns.values]
+    colors = ['#22c55e' if r > 0 else '#ef4444' for r in yearly_returns.values]
     
     fig = go.Figure()
     
@@ -436,23 +416,23 @@ def create_yearly_returns_chart(result):
         marker=dict(color=colors),
         text=[f"{v:+.1f}%" for v in yearly_returns.values],
         textposition='outside',
-        textfont=dict(color='#ffe81f', size=10)
+        textfont=dict(color='#f8fafc', size=10)
     ))
     
     fig.update_layout(
-        title="📅 Galactic Year Returns",
+        title="Yearly Returns",
         xaxis_title="Year",
         yaxis_title="Return (%)",
         height=350,
         template='plotly_dark',
         paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(10, 10, 26, 0.9)',
-        font=dict(family="JetBrains Mono, monospace", color='#ffe81f'),
+        plot_bgcolor='rgba(15, 20, 25, 0.9)',
+        font=dict(family="Inter, sans-serif", color='#f8fafc'),
         margin=dict(l=60, r=20, t=60, b=40)
     )
     
-    fig.update_xaxes(gridcolor='rgba(51, 51, 85, 0.5)', dtick=1)
-    fig.update_yaxes(gridcolor='rgba(51, 51, 85, 0.5)')
+    fig.update_xaxes(gridcolor='rgba(51, 65, 85, 0.5)', dtick=1)
+    fig.update_yaxes(gridcolor='rgba(51, 65, 85, 0.5)')
     
     return fig
 
@@ -460,24 +440,24 @@ def create_yearly_returns_chart(result):
 def main():
     """Main application entry point."""
     
-    # Header with Star Wars theme
+    # Header
     st.markdown("""
     <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
-        <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">⚔️</div>
-        <h1 class="star-wars-title">The Empire Buys Back</h1>
-        <p style="color: #8b8b8b; font-size: 1rem; font-family: 'Orbitron', sans-serif; letter-spacing: 0.2em; margin-top: 0.5rem;">
-            MAY THE PROFITS BE WITH YOU
-        </p>
+        <div class="logo-container" style="justify-content: center; margin-bottom: 0.5rem;">
+            <div class="logo-icon">📊</div>
+        </div>
+        <h1 class="app-title">S&S Analytics</h1>
+        <p class="app-subtitle">Pullback Strategy Backtesting Platform</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Sidebar - Parameters
     with st.sidebar:
-        st.markdown("## ⚙️ Imperial Controls")
+        st.markdown("## ⚙️ Strategy Parameters")
         
-        st.markdown("### 🎯 Target Asset")
+        st.markdown("### 🎯 Asset Selection")
         selected_ticker = st.selectbox(
-            "Choose your target",
+            "Select Asset",
             options=list(AVAILABLE_TICKERS.keys()),
             format_func=lambda x: f"{x} - {AVAILABLE_TICKERS[x]}",
             index=0,
@@ -554,13 +534,14 @@ def main():
                 index=10  # 2010
             )
         
-        run_button = st.button("⚔️ EXECUTE ORDER", type="primary", use_container_width=True)
+        run_button = st.button("🚀 Run Backtest", type="primary", use_container_width=True)
         
         st.markdown("---")
         st.markdown("""
         <div style="text-align: center; padding: 1rem 0; opacity: 0.6;">
-            <div style="font-size: 0.7rem; color: #8b8b8b; font-family: 'Orbitron', sans-serif; letter-spacing: 0.1em;">
-                SNOWY & SAUNDERS<br/>TRADING CONSORTIUM
+            <div style="font-size: 0.75rem; color: #94a3b8;">
+                S&S Analytics<br/>
+                <span style="font-size: 0.65rem;">Snowy & Saunders</span>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -570,7 +551,7 @@ def main():
         
         if run_button:
             # Load data
-            with st.spinner(f"Acquiring {selected_ticker} intel from the Galactic Network..."):
+            with st.spinner(f"Loading {selected_ticker} data..."):
                 try:
                     if data_source == "Download from Yahoo":
                         df = get_ticker_data(selected_ticker, "download", f"{start_year}-01-01")
@@ -609,7 +590,7 @@ def main():
             selected_ticker = st.session_state.get('ticker', 'QQQ')
         
         # Summary Metrics
-        st.markdown('<div class="section-header">📊 Mission Report</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">📊 Performance Summary</div>', unsafe_allow_html=True)
         
         col1, col2, col3, col4 = st.columns(4)
         
@@ -698,7 +679,7 @@ def main():
             ), unsafe_allow_html=True)
         
         # Charts
-        st.markdown('<div class="section-header">📈 Galactic Charts</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">📈 Charts</div>', unsafe_allow_html=True)
         
         equity_chart = create_equity_chart(result, df, selected_ticker)
         st.plotly_chart(equity_chart, use_container_width=True)
@@ -717,7 +698,7 @@ def main():
                 st.plotly_chart(dist_chart, use_container_width=True)
         
         # Trade Log
-        st.markdown('<div class="section-header">📋 Imperial Trade Logs</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">📋 Trade Log</div>', unsafe_allow_html=True)
         
         if result.trades:
             trade_data = []
@@ -751,55 +732,53 @@ def main():
             st.info("No trades were executed with these parameters.")
     
     else:
-        # Show instructions when no backtest has been run - Star Wars themed
+        # Show instructions when no backtest has been run
         st.markdown("""
-        <div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%); border-radius: 8px; border: 1px solid #333355; margin: 2rem 0; box-shadow: 0 0 30px rgba(255, 232, 31, 0.1);">
-            <h2 style="color: #ffe81f; margin-bottom: 1rem; font-family: 'Orbitron', sans-serif; letter-spacing: 0.1em;">⚔️ WELCOME, COMMANDER</h2>
-            <p style="color: #8b8b8b; font-size: 1rem; max-width: 600px; margin: 0 auto 1.5rem auto; font-family: 'Outfit', sans-serif;">
-                Configure your battle strategy in the Imperial Controls panel, then execute your order to analyse historical market data.
+        <div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border-radius: 12px; border: 1px solid #334155; margin: 2rem 0;">
+            <h2 style="color: #f8fafc; margin-bottom: 1rem; font-family: 'Inter', sans-serif;">Welcome to S&S Analytics</h2>
+            <p style="color: #94a3b8; font-size: 1rem; max-width: 600px; margin: 0 auto 1.5rem auto; font-family: 'Inter', sans-serif;">
+                Configure your strategy parameters in the sidebar, then click <strong>Run Backtest</strong> to analyse historical performance.
             </p>
             <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;">
                 <div style="text-align: center;">
                     <div style="font-size: 2rem;">🎯</div>
-                    <div style="color: #8b8b8b; font-size: 0.8rem; font-family: 'Orbitron', sans-serif;">SELECT<br/>TARGET</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Select<br/>Asset</div>
                 </div>
-                <div style="font-size: 2rem; color: #ffe81f;">→</div>
+                <div style="font-size: 2rem; color: #3b82f6;">→</div>
                 <div style="text-align: center;">
                     <div style="font-size: 2rem;">📥</div>
-                    <div style="color: #8b8b8b; font-size: 0.8rem; font-family: 'Orbitron', sans-serif;">SET<br/>ENTRY</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Set Entry<br/>Conditions</div>
                 </div>
-                <div style="font-size: 2rem; color: #ffe81f;">→</div>
+                <div style="font-size: 2rem; color: #3b82f6;">→</div>
                 <div style="text-align: center;">
                     <div style="font-size: 2rem;">🛡️</div>
-                    <div style="color: #8b8b8b; font-size: 0.8rem; font-family: 'Orbitron', sans-serif;">DEFINE<br/>RISK</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Define<br/>Risk</div>
                 </div>
-                <div style="font-size: 2rem; color: #ffe81f;">→</div>
+                <div style="font-size: 2rem; color: #3b82f6;">→</div>
                 <div style="text-align: center;">
-                    <div style="font-size: 2rem;">⚔️</div>
-                    <div style="color: #8b8b8b; font-size: 0.8rem; font-family: 'Orbitron', sans-serif;">EXECUTE<br/>ORDER</div>
+                    <div style="font-size: 2rem;">🚀</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Run<br/>Backtest</div>
                 </div>
             </div>
         </div>
         """, unsafe_allow_html=True)
         
         # Strategy explanation
-        with st.expander("📜 THE SACRED JEDI TEXTS (How the Strategy Works)", expanded=True):
+        with st.expander("ℹ️ How the Strategy Works", expanded=True):
             st.markdown("""
             ### The Pullback Strategy
             
-            *"Do or do not buy the dip. There is no try."* - Yoda, probably
-            
             This strategy is based on a simple observation: **Markets trend upward over time but frequently experience short-term pullbacks from all-time highs**.
             
-            #### Entry Logic (When to Strike)
+            #### Entry Logic
             - Track the **all-time high (ATH)** price
             - When price **pulls back X%** from ATH, enter a long position
             
-            #### Exit Logic (Choose Your Path)
+            #### Exit Logic (Choose One)
             - **ATH Recovery**: Exit when price returns to the previous ATH
             - **Percent Rebound**: Exit when price rebounds Y% from your entry price
             
-            #### Risk Management (Protect the Empire)
+            #### Risk Management
             - If price drops **Z% below entry**, exit the trade (stop-loss)
             - Only **one position** at a time
             - **100% capital** deployed per trade (compounding)
@@ -814,4 +793,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
