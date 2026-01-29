@@ -1,8 +1,9 @@
-# AIModified:2026-01-11T14:57:01Z
+# AIModified:2026-01-29T14:37:59Z
 """
-QQQ Pullback Strategy Backtesting Engine
+S&S Analytics - Pullback Strategy Backtesting Engine
 
-Core backtesting logic for simulating a pullback-and-rebound strategy on QQQ.
+Core backtesting logic for simulating pullback-and-rebound strategies.
+Supports ATH-based, ATR-based, and EMA-relative entry/exit modes.
 """
 
 import pandas as pd
@@ -16,6 +17,13 @@ class ExitMode(Enum):
     """Exit strategy options."""
     ATH_RECOVERY = "ath_recovery"  # Exit when price returns to ATH
     PERCENT_REBOUND = "percent_rebound"  # Exit when price rebounds Y% from entry
+    ATR_REBOUND = "atr_rebound"  # Exit when price rebounds Y ATRs from entry
+
+
+class EntryMode(Enum):
+    """Entry strategy options."""
+    ATH_PULLBACK = "ath_pullback"  # Enter on % pullback from ATH
+    ATR_PULLBACK = "atr_pullback"  # Enter on ATR pullback from EMA
 
 
 @dataclass
@@ -38,7 +46,7 @@ class Trade:
 class BacktestResult:
     """Complete results from a backtest run."""
     trades: List[Trade]
-    equity_curve: pd.DataFrame  # Date, Equity, Drawdown
+    equity_curve: pd.DataFrame  # Date, Equity, Drawdown, EMA, ATR
     
     # Summary metrics
     initial_capital: float
@@ -64,12 +72,81 @@ class BacktestResult:
 @dataclass
 class BacktestConfig:
     """Configuration parameters for the backtest."""
+    # Entry mode
+    entry_mode: EntryMode = EntryMode.ATH_PULLBACK
+    
+    # ATH-based entry (when entry_mode == ATH_PULLBACK)
     pullback_pct: float = 5.0  # Enter when price drops X% from ATH
-    stop_loss_pct: float = 10.0  # Exit if price drops Z% below entry
+    
+    # ATR-based entry (when entry_mode == ATR_PULLBACK)
+    atr_entry_multiplier: float = 1.5  # Enter when price is X ATRs below EMA
+    
+    # Exit mode
     exit_mode: ExitMode = ExitMode.ATH_RECOVERY
-    rebound_pct: float = 5.0  # For PERCENT_REBOUND mode: exit at Y% gain from entry
+    
+    # ATH recovery exit
+    # (no additional params - just waits for price to reach ATH)
+    
+    # Percent rebound exit
+    rebound_pct: float = 5.0  # Exit at Y% gain from entry
+    
+    # ATR rebound exit
+    atr_exit_multiplier: float = 1.0  # Exit when price rises Y ATRs from entry
+    
+    # EMA settings
+    ema_period: int = 20  # EMA period for ATR-based strategies
+    use_ema_filter: bool = False  # Only enter when price is below EMA
+    
+    # ATR settings
+    atr_period: int = 14  # ATR calculation period
+    
+    # Risk management
+    stop_loss_pct: float = 10.0  # Exit if price drops Z% below entry
     initial_capital: float = 10000.0
-    cooloff_after_stop: bool = False  # Wait for new ATH after stop-loss before re-entering
+    cooloff_after_stop: bool = False  # Wait for new ATH after stop-loss
+
+
+def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
+    """
+    Calculate Average True Range (ATR).
+    
+    Args:
+        df: DataFrame with High, Low, Close columns
+        period: ATR period (default 14)
+        
+    Returns:
+        Series with ATR values
+    """
+    high = df['High']
+    low = df['Low']
+    close = df['Close']
+    
+    # True Range components
+    tr1 = high - low
+    tr2 = abs(high - close.shift(1))
+    tr3 = abs(low - close.shift(1))
+    
+    # True Range is max of the three
+    true_range = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
+    
+    # ATR is EMA of True Range
+    atr = true_range.ewm(span=period, adjust=False).mean()
+    
+    return atr
+
+
+def calculate_ema(series: pd.Series, period: int = 20) -> pd.Series:
+    """
+    Calculate Exponential Moving Average.
+    
+    Args:
+        series: Price series
+        period: EMA period
+        
+    Returns:
+        Series with EMA values
+    """
+    return series.ewm(span=period, adjust=False).mean()
 
 
 def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
@@ -77,7 +154,7 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
     Run the pullback strategy backtest on historical data.
     
     Args:
-        df: DataFrame with 'Date' and 'Close' columns (Date should be index or column)
+        df: DataFrame with 'Date', 'Open', 'High', 'Low', 'Close' columns
         config: Backtest configuration parameters
         
     Returns:
@@ -90,6 +167,10 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
         df = df.set_index('Date')
     df = df.sort_index()
     
+    # Calculate indicators
+    df['EMA'] = calculate_ema(df['Close'], config.ema_period)
+    df['ATR'] = calculate_atr(df, config.atr_period)
+    
     # Initialize tracking variables
     capital = config.initial_capital
     ath = df['Close'].iloc[0]
@@ -97,6 +178,7 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
     in_position = False
     entry_price = 0.0
     entry_date = None
+    entry_atr = 0.0  # ATR at entry for ATR-based exits
     shares = 0.0
     ath_at_entry = 0.0
     max_adverse_excursion = 0.0
@@ -105,8 +187,13 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
     trades: List[Trade] = []
     equity_history = []
     
-    for date, row in df.iterrows():
+    # Skip initial rows where indicators aren't ready
+    start_idx = max(config.ema_period, config.atr_period)
+    
+    for i, (date, row) in enumerate(df.iterrows()):
         price = row['Close']
+        ema = row['EMA']
+        atr = row['ATR']
         
         # Update ATH
         if price > ath:
@@ -124,8 +211,17 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
             'Equity': current_equity,
             'Price': price,
             'ATH': ath,
+            'EMA': ema,
+            'ATR': atr,
             'In_Position': in_position
         })
+        
+        # Skip trading logic until indicators are ready
+        if i < start_idx:
+            continue
+        
+        if pd.isna(atr) or pd.isna(ema):
+            continue
         
         if in_position:
             # Check for exit conditions
@@ -138,20 +234,28 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
             exit_triggered = False
             exit_reason = ''
             
-            # Stop-loss check
+            # Stop-loss check (always applies)
             if current_pnl_pct <= -config.stop_loss_pct:
                 exit_triggered = True
                 exit_reason = 'stop_loss'
                 if config.cooloff_after_stop:
                     waiting_for_new_ath = True
             
-            # Target exit check
+            # Target exit check based on exit mode
             elif config.exit_mode == ExitMode.ATH_RECOVERY:
                 if price >= ath_at_entry:
                     exit_triggered = True
                     exit_reason = 'target'
-            else:  # PERCENT_REBOUND
+                    
+            elif config.exit_mode == ExitMode.PERCENT_REBOUND:
                 if current_pnl_pct >= config.rebound_pct:
+                    exit_triggered = True
+                    exit_reason = 'target'
+                    
+            elif config.exit_mode == ExitMode.ATR_REBOUND:
+                # Exit when price rises X ATRs from entry
+                atr_move = (price - entry_price) / entry_atr if entry_atr > 0 else 0
+                if atr_move >= config.atr_exit_multiplier:
                     exit_triggered = True
                     exit_reason = 'target'
             
@@ -182,17 +286,39 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
         
         else:
             # Check for entry condition
-            if not waiting_for_new_ath:
+            if waiting_for_new_ath:
+                continue
+            
+            entry_signal = False
+            
+            # Check entry based on mode
+            if config.entry_mode == EntryMode.ATH_PULLBACK:
+                # Original ATH pullback logic
                 pullback_pct = (ath - price) / ath * 100
-                
                 if pullback_pct >= config.pullback_pct:
-                    # Enter position
-                    entry_price = price
-                    entry_date = date
-                    shares = capital / price
-                    ath_at_entry = ath
-                    max_adverse_excursion = 0.0
-                    in_position = True
+                    # Optional EMA filter
+                    if config.use_ema_filter:
+                        if price < ema:
+                            entry_signal = True
+                    else:
+                        entry_signal = True
+                        
+            elif config.entry_mode == EntryMode.ATR_PULLBACK:
+                # ATR-based entry: price is X ATRs below EMA
+                if atr > 0:
+                    atr_distance = (ema - price) / atr
+                    if atr_distance >= config.atr_entry_multiplier:
+                        entry_signal = True
+            
+            if entry_signal:
+                # Enter position
+                entry_price = price
+                entry_date = date
+                entry_atr = atr  # Store ATR at entry for ATR-based exits
+                shares = capital / price
+                ath_at_entry = ath
+                max_adverse_excursion = 0.0
+                in_position = True
     
     # Close any open position at end of data
     if in_position:
@@ -284,7 +410,7 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
 
 
 def load_data_from_csv(filepath: str) -> pd.DataFrame:
-    """Load QQQ data from a CSV file."""
+    """Load price data from a CSV file."""
     df = pd.read_csv(filepath, parse_dates=['Date'])
     return df
 
@@ -299,7 +425,7 @@ def download_ticker_data(ticker_symbol: str = "QQQ", start_date: str = "2000-01-
         end_date: End date in YYYY-MM-DD format (defaults to today)
         
     Returns:
-        DataFrame with Date and Close columns
+        DataFrame with Date, Open, High, Low, Close, Volume columns
     """
     import yfinance as yf
     
@@ -316,4 +442,3 @@ def download_ticker_data(ticker_symbol: str = "QQQ", start_date: str = "2000-01-
 def download_qqq_data(start_date: str = "2000-01-01", end_date: Optional[str] = None) -> pd.DataFrame:
     """Backwards compatible wrapper for download_ticker_data."""
     return download_ticker_data("QQQ", start_date, end_date)
-

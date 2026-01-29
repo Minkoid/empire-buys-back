@@ -1,8 +1,9 @@
-# AIModified:2026-01-29T10:57:45Z
+# AIModified:2026-01-29T14:37:59Z
 """
 S&S Analytics - Pullback Strategy Backtesting Tool
 
 A Streamlit application for backtesting pullback-based trading strategies.
+Supports ATH-based, ATR-based, and EMA-relative entry/exit modes.
 """
 
 import streamlit as st
@@ -15,6 +16,7 @@ import os
 from backtest_engine import (
     BacktestConfig,
     ExitMode,
+    EntryMode,
     run_backtest,
     load_data_from_csv,
     download_ticker_data
@@ -29,7 +31,10 @@ AVAILABLE_TICKERS = {
     "VTI": "Total US Stock Market",
     "VOO": "Vanguard S&P 500",
     "TQQQ": "3x Leveraged Nasdaq-100",
+    "SOXL": "3x Semiconductors",
     "ARKK": "ARK Innovation ETF",
+    "GLD": "Gold ETF",
+    "SLV": "Silver ETF",
 }
 
 
@@ -55,6 +60,7 @@ st.markdown("""
         --accent-blue: #3b82f6;
         --accent-amber: #f59e0b;
         --accent-teal: #14b8a6;
+        --accent-purple: #a855f7;
         --text-primary: #f8fafc;
         --text-secondary: #94a3b8;
         --border-color: #334155;
@@ -163,6 +169,15 @@ st.markdown("""
         background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
     }
     
+    /* Toggle section styling */
+    .toggle-section {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        margin: 0.5rem 0;
+    }
+    
     /* Logo styling */
     .logo-container {
         display: flex;
@@ -215,7 +230,7 @@ def get_ticker_data(ticker: str, source: str, start_date: str = "2000-01-01"):
         return load_data_from_csv(source)
 
 
-def create_equity_chart(result, df, ticker: str = "QQQ"):
+def create_equity_chart(result, df, ticker: str = "QQQ", show_ema: bool = True):
     """Create the main equity curve and price chart."""
     fig = make_subplots(
         rows=3, cols=1,
@@ -250,6 +265,20 @@ def create_equity_chart(result, df, ticker: str = "QQQ"):
         ),
         row=2, col=1
     )
+    
+    # EMA line
+    if show_ema and 'EMA' in result.equity_curve.columns:
+        fig.add_trace(
+            go.Scatter(
+                x=result.equity_curve.index,
+                y=result.equity_curve['EMA'],
+                mode='lines',
+                name='EMA',
+                line=dict(color='#a855f7', width=1.5, dash='solid'),
+                opacity=0.8
+            ),
+            row=2, col=1
+        )
     
     # ATH line
     fig.add_trace(
@@ -455,6 +484,7 @@ def main():
     with st.sidebar:
         st.markdown("## ⚙️ Strategy Parameters")
         
+        # Asset Selection
         st.markdown("### 🎯 Asset Selection")
         selected_ticker = st.selectbox(
             "Select Asset",
@@ -464,26 +494,101 @@ def main():
             help="Select the ETF/stock to backtest"
         )
         
-        st.markdown("### 📥 Entry Conditions")
-        pullback_pct = st.slider(
-            "Pullback from ATH (%)",
-            min_value=1.0,
-            max_value=30.0,
-            value=5.0,
-            step=0.5,
-            help="Enter a long position when price drops this much from all-time high"
+        st.markdown("---")
+        
+        # Entry Mode Toggle
+        st.markdown("### 📥 Entry Strategy")
+        
+        use_atr_entry = st.toggle(
+            "Use ATR-Based Entry",
+            value=False,
+            help="Toggle between ATH % pullback (off) and ATR-based entry (on)"
         )
         
-        st.markdown("### 📤 Exit Conditions")
-        exit_mode = st.radio(
+        if use_atr_entry:
+            # ATR-based entry controls
+            st.markdown("**ATR Entry Settings**")
+            
+            atr_entry_multiplier = st.slider(
+                "ATR Pullback (× ATR below EMA)",
+                min_value=0.1,
+                max_value=5.0,
+                value=1.5,
+                step=0.1,
+                help="Enter when price is X ATRs below the EMA"
+            )
+            
+            ema_period = st.select_slider(
+                "EMA Period",
+                options=[10, 20, 50, 100, 150, 200],
+                value=20,
+                help="Period for the Exponential Moving Average"
+            )
+            
+            atr_period = st.select_slider(
+                "ATR Period",
+                options=[7, 10, 14, 20, 30],
+                value=14,
+                help="Period for Average True Range calculation"
+            )
+            
+            # Set entry mode
+            entry_mode = EntryMode.ATR_PULLBACK
+            pullback_pct = 5.0  # Not used but needed for config
+            use_ema_filter = False  # Not needed for ATR mode
+            
+        else:
+            # ATH-based entry controls
+            st.markdown("**ATH Pullback Settings**")
+            
+            pullback_pct = st.slider(
+                "Pullback from ATH (%)",
+                min_value=1.0,
+                max_value=30.0,
+                value=5.0,
+                step=0.5,
+                help="Enter when price drops this much from all-time high"
+            )
+            
+            use_ema_filter = st.checkbox(
+                "Require price below EMA",
+                value=False,
+                help="Only enter if price is also below the EMA"
+            )
+            
+            if use_ema_filter:
+                ema_period = st.select_slider(
+                    "EMA Period",
+                    options=[10, 20, 50, 100, 150, 200],
+                    value=20,
+                    help="Period for the Exponential Moving Average"
+                )
+            else:
+                ema_period = 20  # Default
+            
+            atr_period = 14  # Default
+            atr_entry_multiplier = 1.5  # Not used
+            entry_mode = EntryMode.ATH_PULLBACK
+        
+        st.markdown("---")
+        
+        # Exit Mode Toggle
+        st.markdown("### 📤 Exit Strategy")
+        
+        exit_option = st.radio(
             "Exit Mode",
-            options=["ATH Recovery", "Percent Rebound"],
+            options=["ATH Recovery", "Percent Rebound", "ATR Rebound"],
             index=0,
-            help="Choose when to exit: when price returns to ATH, or after gaining X%"
+            help="Choose when to exit the position"
         )
         
-        rebound_pct = 5.0
-        if exit_mode == "Percent Rebound":
+        if exit_option == "ATH Recovery":
+            exit_mode = ExitMode.ATH_RECOVERY
+            rebound_pct = 5.0
+            atr_exit_multiplier = 1.0
+            
+        elif exit_option == "Percent Rebound":
+            exit_mode = ExitMode.PERCENT_REBOUND
             rebound_pct = st.slider(
                 "Rebound Target (%)",
                 min_value=1.0,
@@ -492,7 +597,23 @@ def main():
                 step=0.5,
                 help="Exit when position gains this percentage"
             )
+            atr_exit_multiplier = 1.0
+            
+        else:  # ATR Rebound
+            exit_mode = ExitMode.ATR_REBOUND
+            atr_exit_multiplier = st.slider(
+                "ATR Rebound (× ATR from entry)",
+                min_value=0.1,
+                max_value=5.0,
+                value=1.0,
+                step=0.1,
+                help="Exit when price rises X ATRs from entry price"
+            )
+            rebound_pct = 5.0
         
+        st.markdown("---")
+        
+        # Risk Management
         st.markdown("### 🛡️ Risk Management")
         stop_loss_pct = st.slider(
             "Stop-Loss (%)",
@@ -509,6 +630,9 @@ def main():
             help="Wait for new ATH before re-entering after a stop-loss"
         )
         
+        st.markdown("---")
+        
+        # Capital
         st.markdown("### 💰 Capital")
         initial_capital = st.number_input(
             "Initial Capital ($)",
@@ -520,6 +644,7 @@ def main():
         
         st.markdown("---")
         
+        # Data Source
         st.markdown("### 📊 Data Source")
         data_source = st.radio(
             "Data Source",
@@ -566,15 +691,22 @@ def main():
                     st.error(f"Error loading data: {str(e)}")
                     return
             
-            # Store ticker in session
+            # Store settings in session
             st.session_state['ticker'] = selected_ticker
+            st.session_state['show_ema'] = use_atr_entry or use_ema_filter
             
             # Configure backtest
             config = BacktestConfig(
+                entry_mode=entry_mode,
                 pullback_pct=pullback_pct,
-                stop_loss_pct=stop_loss_pct,
-                exit_mode=ExitMode.ATH_RECOVERY if exit_mode == "ATH Recovery" else ExitMode.PERCENT_REBOUND,
+                atr_entry_multiplier=atr_entry_multiplier,
+                exit_mode=exit_mode,
                 rebound_pct=rebound_pct,
+                atr_exit_multiplier=atr_exit_multiplier,
+                ema_period=ema_period,
+                use_ema_filter=use_ema_filter,
+                atr_period=atr_period,
+                stop_loss_pct=stop_loss_pct,
                 initial_capital=float(initial_capital),
                 cooloff_after_stop=cooloff
             )
@@ -681,7 +813,8 @@ def main():
         # Charts
         st.markdown('<div class="section-header">📈 Charts</div>', unsafe_allow_html=True)
         
-        equity_chart = create_equity_chart(result, df, selected_ticker)
+        show_ema = st.session_state.get('show_ema', False)
+        equity_chart = create_equity_chart(result, df, selected_ticker, show_ema=show_ema)
         st.plotly_chart(equity_chart, use_container_width=True)
         
         # Additional charts
@@ -766,28 +899,29 @@ def main():
         # Strategy explanation
         with st.expander("ℹ️ How the Strategy Works", expanded=True):
             st.markdown("""
-            ### The Pullback Strategy
+            ### Entry Strategies
             
-            This strategy is based on a simple observation: **Markets trend upward over time but frequently experience short-term pullbacks from all-time highs**.
-            
-            #### Entry Logic
+            **ATH Pullback Mode** (Default)
             - Track the **all-time high (ATH)** price
             - When price **pulls back X%** from ATH, enter a long position
+            - Optional: Only enter if price is also below the EMA
             
-            #### Exit Logic (Choose One)
+            **ATR Pullback Mode** (Toggle on)
+            - Calculate the **Exponential Moving Average (EMA)**
+            - When price drops **X ATRs below the EMA**, enter a long position
+            - ATR (Average True Range) measures volatility
+            
+            ### Exit Strategies
+            
             - **ATH Recovery**: Exit when price returns to the previous ATH
-            - **Percent Rebound**: Exit when price rebounds Y% from your entry price
+            - **Percent Rebound**: Exit when price rebounds Y% from entry
+            - **ATR Rebound**: Exit when price rises Y ATRs from entry
             
-            #### Risk Management
-            - If price drops **Z% below entry**, exit the trade (stop-loss)
-            - Only **one position** at a time
-            - **100% capital** deployed per trade (compounding)
+            ### Risk Management
             
-            #### What This Tool Shows You
-            - Historical performance of the strategy
-            - Win rate, drawdowns, and risk metrics
-            - Visual trade markers on price charts
-            - Yearly returns breakdown
+            - **Stop-Loss**: Exit if price drops Z% below entry
+            - **Cool-off**: Optionally wait for new ATH after stop-loss
+            - **Single Position**: Only one position at a time
             """)
 
 
