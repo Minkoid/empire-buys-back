@@ -1,4 +1,4 @@
-# AIModified:2026-01-29T14:37:59Z
+# AIModified:2026-01-29T14:48:01Z
 """
 S&S Analytics - Pullback Strategy Backtesting Tool
 
@@ -16,7 +16,6 @@ import os
 from backtest_engine import (
     BacktestConfig,
     ExitMode,
-    EntryMode,
     run_backtest,
     load_data_from_csv,
     download_ticker_data
@@ -496,19 +495,39 @@ def main():
         
         st.markdown("---")
         
-        # Entry Mode Toggle
-        st.markdown("### 📥 Entry Strategy")
+        # Entry Signals - Independent Toggles (Either/Or)
+        st.markdown("### 📥 Entry Signals")
+        st.caption("Enable one or both - enters when EITHER condition is met")
         
+        # ATH Entry Toggle
+        use_ath_entry = st.toggle(
+            "📉 ATH Pullback Entry",
+            value=True,
+            help="Enter when price drops X% from all-time high"
+        )
+        
+        if use_ath_entry:
+            pullback_pct = st.slider(
+                "Pullback from ATH (%)",
+                min_value=1.0,
+                max_value=30.0,
+                value=5.0,
+                step=0.5,
+                help="Enter when price drops this much from all-time high"
+            )
+        else:
+            pullback_pct = 5.0  # Default
+        
+        st.markdown("")  # Spacing
+        
+        # ATR Entry Toggle
         use_atr_entry = st.toggle(
-            "Use ATR-Based Entry",
+            "📊 ATR Pullback Entry",
             value=False,
-            help="Toggle between ATH % pullback (off) and ATR-based entry (on)"
+            help="Enter when price is X ATRs below the EMA"
         )
         
         if use_atr_entry:
-            # ATR-based entry controls
-            st.markdown("**ATR Entry Settings**")
-            
             atr_entry_multiplier = st.slider(
                 "ATR Pullback (× ATR below EMA)",
                 min_value=0.1,
@@ -531,44 +550,14 @@ def main():
                 value=14,
                 help="Period for Average True Range calculation"
             )
-            
-            # Set entry mode
-            entry_mode = EntryMode.ATR_PULLBACK
-            pullback_pct = 5.0  # Not used but needed for config
-            use_ema_filter = False  # Not needed for ATR mode
-            
         else:
-            # ATH-based entry controls
-            st.markdown("**ATH Pullback Settings**")
-            
-            pullback_pct = st.slider(
-                "Pullback from ATH (%)",
-                min_value=1.0,
-                max_value=30.0,
-                value=5.0,
-                step=0.5,
-                help="Enter when price drops this much from all-time high"
-            )
-            
-            use_ema_filter = st.checkbox(
-                "Require price below EMA",
-                value=False,
-                help="Only enter if price is also below the EMA"
-            )
-            
-            if use_ema_filter:
-                ema_period = st.select_slider(
-                    "EMA Period",
-                    options=[10, 20, 50, 100, 150, 200],
-                    value=20,
-                    help="Period for the Exponential Moving Average"
-                )
-            else:
-                ema_period = 20  # Default
-            
+            atr_entry_multiplier = 1.5  # Default
+            ema_period = 20  # Default
             atr_period = 14  # Default
-            atr_entry_multiplier = 1.5  # Not used
-            entry_mode = EntryMode.ATH_PULLBACK
+        
+        # Validation - at least one must be enabled
+        if not use_ath_entry and not use_atr_entry:
+            st.warning("⚠️ Enable at least one entry signal")
         
         st.markdown("---")
         
@@ -693,18 +682,18 @@ def main():
             
             # Store settings in session
             st.session_state['ticker'] = selected_ticker
-            st.session_state['show_ema'] = use_atr_entry or use_ema_filter
+            st.session_state['show_ema'] = use_atr_entry
             
             # Configure backtest
             config = BacktestConfig(
-                entry_mode=entry_mode,
+                use_ath_entry=use_ath_entry,
+                use_atr_entry=use_atr_entry,
                 pullback_pct=pullback_pct,
                 atr_entry_multiplier=atr_entry_multiplier,
                 exit_mode=exit_mode,
                 rebound_pct=rebound_pct,
                 atr_exit_multiplier=atr_exit_multiplier,
                 ema_period=ema_period,
-                use_ema_filter=use_ema_filter,
                 atr_period=atr_period,
                 stop_loss_pct=stop_loss_pct,
                 initial_capital=float(initial_capital),
@@ -899,16 +888,17 @@ def main():
         # Strategy explanation
         with st.expander("ℹ️ How the Strategy Works", expanded=True):
             st.markdown("""
-            ### Entry Strategies
+            ### Entry Signals (Either/Or)
             
-            **ATH Pullback Mode** (Default)
+            Enable one or both entry signals. The system enters when **EITHER** condition is met:
+            
+            **📉 ATH Pullback**
             - Track the **all-time high (ATH)** price
-            - When price **pulls back X%** from ATH, enter a long position
-            - Optional: Only enter if price is also below the EMA
+            - When price **pulls back X%** from ATH, trigger entry
             
-            **ATR Pullback Mode** (Toggle on)
+            **📊 ATR Pullback**
             - Calculate the **Exponential Moving Average (EMA)**
-            - When price drops **X ATRs below the EMA**, enter a long position
+            - When price drops **X ATRs below the EMA**, trigger entry
             - ATR (Average True Range) measures volatility
             
             ### Exit Strategies

@@ -1,4 +1,4 @@
-# AIModified:2026-01-29T14:37:59Z
+# AIModified:2026-01-29T14:48:01Z
 """
 S&S Analytics - Pullback Strategy Backtesting Engine
 
@@ -21,9 +21,10 @@ class ExitMode(Enum):
 
 
 class EntryMode(Enum):
-    """Entry strategy options."""
+    """Entry strategy options - kept for backwards compatibility."""
     ATH_PULLBACK = "ath_pullback"  # Enter on % pullback from ATH
     ATR_PULLBACK = "atr_pullback"  # Enter on ATR pullback from EMA
+    EITHER = "either"  # Enter on either condition (OR logic)
 
 
 @dataclass
@@ -72,20 +73,18 @@ class BacktestResult:
 @dataclass
 class BacktestConfig:
     """Configuration parameters for the backtest."""
-    # Entry mode
-    entry_mode: EntryMode = EntryMode.ATH_PULLBACK
+    # Entry toggles - either/or logic (enter if ANY enabled condition is met)
+    use_ath_entry: bool = True  # Enable ATH pullback entry
+    use_atr_entry: bool = False  # Enable ATR-based entry
     
-    # ATH-based entry (when entry_mode == ATH_PULLBACK)
+    # ATH-based entry settings
     pullback_pct: float = 5.0  # Enter when price drops X% from ATH
     
-    # ATR-based entry (when entry_mode == ATR_PULLBACK)
+    # ATR-based entry settings
     atr_entry_multiplier: float = 1.5  # Enter when price is X ATRs below EMA
     
     # Exit mode
     exit_mode: ExitMode = ExitMode.ATH_RECOVERY
-    
-    # ATH recovery exit
-    # (no additional params - just waits for price to reach ATH)
     
     # Percent rebound exit
     rebound_pct: float = 5.0  # Exit at Y% gain from entry
@@ -95,7 +94,6 @@ class BacktestConfig:
     
     # EMA settings
     ema_period: int = 20  # EMA period for ATR-based strategies
-    use_ema_filter: bool = False  # Only enter when price is below EMA
     
     # ATR settings
     atr_period: int = 14  # ATR calculation period
@@ -291,24 +289,25 @@ def run_backtest(df: pd.DataFrame, config: BacktestConfig) -> BacktestResult:
             
             entry_signal = False
             
-            # Check entry based on mode
-            if config.entry_mode == EntryMode.ATH_PULLBACK:
-                # Original ATH pullback logic
+            # Check entry signals - either/or logic
+            ath_signal = False
+            atr_signal = False
+            
+            # ATH pullback check
+            if config.use_ath_entry:
                 pullback_pct = (ath - price) / ath * 100
                 if pullback_pct >= config.pullback_pct:
-                    # Optional EMA filter
-                    if config.use_ema_filter:
-                        if price < ema:
-                            entry_signal = True
-                    else:
-                        entry_signal = True
-                        
-            elif config.entry_mode == EntryMode.ATR_PULLBACK:
-                # ATR-based entry: price is X ATRs below EMA
-                if atr > 0:
-                    atr_distance = (ema - price) / atr
-                    if atr_distance >= config.atr_entry_multiplier:
-                        entry_signal = True
+                    ath_signal = True
+            
+            # ATR pullback check
+            if config.use_atr_entry and atr > 0:
+                atr_distance = (ema - price) / atr
+                if atr_distance >= config.atr_entry_multiplier:
+                    atr_signal = True
+            
+            # Enter if EITHER signal is true (OR logic)
+            if ath_signal or atr_signal:
+                entry_signal = True
             
             if entry_signal:
                 # Enter position
