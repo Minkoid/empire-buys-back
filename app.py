@@ -781,39 +781,8 @@ def main():
     
     st.markdown("")  # Spacing
     
-    # Preset buttons row
-    preset_col1, preset_col2, preset_col3, preset_col4 = st.columns(4)
-    
-    # Initialize preset in session state
-    if 'preset' not in st.session_state:
-        st.session_state['preset'] = 'balanced'
-    
-    with preset_col1:
-        if st.button("🐢 Conservative", use_container_width=True):
-            st.session_state['preset'] = 'conservative'
-            st.rerun()
-    with preset_col2:
-        if st.button("⚖️ Balanced", use_container_width=True):
-            st.session_state['preset'] = 'balanced'
-            st.rerun()
-    with preset_col3:
-        if st.button("🔥 Aggressive", use_container_width=True):
-            st.session_state['preset'] = 'aggressive'
-            st.rerun()
-    with preset_col4:
-        if st.button("📈 Trend", use_container_width=True):
-            st.session_state['preset'] = 'trend'
-            st.rerun()
-    
-    # Apply preset values
-    preset = st.session_state['preset']
-    preset_values = {
-        'conservative': {'pullback': 10.0, 'stop_loss': 15.0, 'exit': 'ATH Recovery', 'rebound': 5.0, 'use_trend': True},
-        'balanced': {'pullback': 5.0, 'stop_loss': 10.0, 'exit': 'Percent Rebound', 'rebound': 5.0, 'use_trend': False},
-        'aggressive': {'pullback': 3.0, 'stop_loss': 8.0, 'exit': 'Percent Rebound', 'rebound': 3.0, 'use_trend': False},
-        'trend': {'pullback': 5.0, 'stop_loss': 10.0, 'exit': 'ATH Recovery', 'rebound': 5.0, 'use_trend': True},
-    }
-    pv = preset_values.get(preset, preset_values['balanced'])
+    # Default values (previously from presets)
+    pv = {'pullback': 5.0, 'stop_loss': 10.0, 'exit': 'ATH Recovery', 'rebound': 5.0, 'use_trend': False}
     
     st.markdown("")  # Spacing
     
