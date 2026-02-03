@@ -45,6 +45,10 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Page navigation
+if 'page' not in st.session_state:
+    st.session_state['page'] = 'backtest'
+
 # Professional CSS theme
 st.markdown("""
 <style>
@@ -523,6 +527,227 @@ def create_yearly_returns_chart(result):
     return fig
 
 
+def show_roadmap():
+    """Display the roadmap/upgrade plan page."""
+    
+    # Back button
+    if st.button("← Back to Backtester"):
+        st.session_state['page'] = 'backtest'
+        st.rerun()
+    
+    st.markdown("""
+    <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
+        <h1 class="app-title">S&S Analytics</h1>
+        <p class="app-subtitle">Platform Upgrade Plan - Multi-User & Paper Trading</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Current State
+    st.markdown('<div class="section-header">📍 Where We Are Now</div>', unsafe_allow_html=True)
+    st.markdown("""
+    S&S Analytics is a web app that lets you test "buy the dip" trading strategies on historical stock data, 
+    adjusting rules like how big a price drop triggers a buy and when to sell, then instantly shows you 
+    how that strategy would have performed over the past 25 years.
+    """)
+    
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.markdown("""
+        <div class="metric-card">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
+            <div class="metric-label">Strategy Backtesting</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">Test on 25 years of data</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col2:
+        st.markdown("""
+        <div class="metric-card">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
+            <div class="metric-label">Multiple Assets</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">QQQ, SPY, Gold & more</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown("""
+        <div class="metric-card">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
+            <div class="metric-label">Quick Presets</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">Conservative to Aggressive</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with col4:
+        st.markdown("""
+        <div class="metric-card">
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
+            <div class="metric-label">Visual Analytics</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">Charts & trade markers</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # The Upgrade Plan
+    st.markdown('<div class="section-header">🚀 The Upgrade Plan</div>', unsafe_allow_html=True)
+    
+    st.code("""
+┌─────────────────────────────────────────────────────────────────┐
+│                        LOGIN SCREEN                             │
+│                                                                 │
+│                   👤 Username: [________]                       │
+│                   🔒 Password: [________]                       │
+│                         [Login]                                 │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌───────────────────────────────┬─────────────────────────────────┐
+│   SAUNDERS' DASHBOARD         │   SNOWY'S DASHBOARD             │
+├───────────────────────────────┼─────────────────────────────────┤
+│   📁 My Saved Strategies      │   📁 My Saved Strategies        │
+│   📈 My Paper Trades          │   📈 My Paper Trades            │
+│   📊 My Backtest History      │   📊 My Backtest History        │
+│   ⚙️  My Settings              │   ⚙️  My Settings                │
+└───────────────────────────────┴─────────────────────────────────┘
+    """, language=None)
+    
+    # Phase cards
+    phases = [
+        ("1", "User Accounts & Authentication", "Secure login system so you and Snowy each have your own private dashboard. Your strategies, trades, and history are completely separate."),
+        ("2", "Cloud Database", "Store everything in a proper database - saved strategies, backtest results, paper trades, and performance history. Access from any device."),
+        ("3", "Paper Trading Bot", "Once you've found a winning strategy, activate paper trading. The bot runs daily/hourly, checks live prices, and executes fake trades following your rules."),
+        ("4", "Notifications & Alerts", "Get email alerts when your strategy triggers a buy or sell signal. Stay informed without constantly checking the app."),
+    ]
+    
+    for num, title, desc in phases:
+        st.markdown(f"""
+        <div style="display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.5rem; 
+                    background: rgba(59, 130, 246, 0.05); border-radius: 10px; margin-bottom: 1rem; 
+                    border-left: 4px solid #3b82f6;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; font-weight: 700; 
+                        color: #3b82f6; background: rgba(59, 130, 246, 0.1); width: 50px; height: 50px; 
+                        border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                {num}
+            </div>
+            <div>
+                <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #f8fafc;">{title}</h3>
+                <p style="color: #94a3b8; font-size: 0.95rem; margin: 0;">{desc}</p>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # New Features
+    st.markdown('<div class="section-header">✨ New Features</div>', unsafe_allow_html=True)
+    
+    feat_col1, feat_col2, feat_col3, feat_col4 = st.columns(4)
+    features = [
+        ("🔐", "Secure Login", "Username/password with encryption"),
+        ("💾", "Save Strategies", "Name and save your best setups"),
+        ("📜", "Backtest History", "Every run logged with results"),
+        ("📈", "Paper Trading", "Simulate with $10k fake money"),
+        ("🤖", "Daily Bot", "Automated checks & execution"),
+        ("📧", "Email Alerts", "Get notified on signals"),
+        ("📊", "Live Dashboard", "Track performance real-time"),
+        ("🏆", "Leaderboard", "Compare with your partner"),
+    ]
+    
+    for i, (icon, title, desc) in enumerate(features):
+        col = [feat_col1, feat_col2, feat_col3, feat_col4][i % 4]
+        with col:
+            st.markdown(f"""
+            <div class="metric-card">
+                <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">{icon}</div>
+                <div class="metric-label">{title}</div>
+                <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.5rem;">{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # Technology Stack
+    st.markdown('<div class="section-header">🛠️ Technology Stack</div>', unsafe_allow_html=True)
+    
+    tech_data = [
+        ("Database", "Supabase (PostgreSQL)", "FREE", "500MB storage, built-in auth"),
+        ("Web App", "Streamlit Cloud", "FREE", "Already using this"),
+        ("Paper Trading", "Alpaca API", "FREE", "Unlimited paper trades"),
+        ("Daily Bot", "GitHub Actions", "FREE", "2,000 mins/month free"),
+        ("Email Alerts", "Resend / Gmail", "FREE", "100 emails/day free"),
+    ]
+    
+    tech_df = pd.DataFrame(tech_data, columns=["Component", "Technology", "Cost", "Notes"])
+    st.dataframe(tech_df, use_container_width=True, hide_index=True)
+    
+    # Cost summary
+    cost_col1, cost_col2, cost_col3 = st.columns(3)
+    with cost_col1:
+        st.markdown("""
+        <div style="text-align: center; padding: 1.5rem 2rem; background: rgba(34, 197, 94, 0.05); 
+                    border: 1px solid #22c55e; border-radius: 10px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: #22c55e;">£0</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">Monthly Cost</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with cost_col2:
+        st.markdown("""
+        <div style="text-align: center; padding: 1.5rem 2rem; background: rgba(34, 197, 94, 0.05); 
+                    border: 1px solid #22c55e; border-radius: 10px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: #22c55e;">£0</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">Setup Cost</div>
+        </div>
+        """, unsafe_allow_html=True)
+    with cost_col3:
+        st.markdown("""
+        <div style="text-align: center; padding: 1.5rem 2rem; background: rgba(34, 197, 94, 0.05); 
+                    border: 1px solid #22c55e; border-radius: 10px;">
+            <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: #22c55e;">∞</div>
+            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">Paper Trades</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # Implementation Steps
+    st.markdown('<div class="section-header">📅 Implementation Steps</div>', unsafe_allow_html=True)
+    
+    steps = [
+        ("Step 1: Database Setup", "Create Supabase account, set up tables and authentication"),
+        ("Step 2: Login & User Dashboards", "Add login page, connect to database, create personal dashboards"),
+        ("Step 3: Paper Trading Bot", "Connect Alpaca, build daily bot, add live trade tracking"),
+    ]
+    
+    for title, desc in steps:
+        st.markdown(f"""
+        <div style="padding: 1rem; border-left: 3px solid #3b82f6; margin-bottom: 0.75rem; background: rgba(59, 130, 246, 0.03);">
+            <h4 style="color: #f8fafc; margin: 0 0 0.25rem 0; font-size: 1rem;">{title}</h4>
+            <p style="color: #94a3b8; margin: 0; font-size: 0.9rem;">{desc}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # CTA
+    st.markdown("""
+    <div style="text-align: center; padding: 2rem; background: linear-gradient(145deg, rgba(59, 130, 246, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%); 
+                border-radius: 12px; border: 1px solid #3b82f6; margin-top: 2rem;">
+        <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.75rem; color: #3b82f6; margin-bottom: 1rem;">Ready to Upgrade?</h3>
+        <p style="color: #94a3b8; max-width: 600px; margin: 0 auto;">
+            The first step is to create a free Supabase account. Once that's done, 
+            we can start building the multi-user system and paper trading features.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Footer
+    st.markdown("""
+    <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
+        <div style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">S&S Analytics</div>
+        <p style="color: #94a3b8; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def main():
     """Main application entry point."""
     
@@ -915,7 +1140,19 @@ def main():
                 - Only enter if MA is rising over X days
                 - Helps avoid downtrend entries
                 """)
+        
+        # Roadmap button
+        st.markdown("")
+        roadmap_col1, roadmap_col2, roadmap_col3 = st.columns([1, 2, 1])
+        with roadmap_col2:
+            if st.button("🚀 View Upgrade Roadmap", use_container_width=True):
+                st.session_state['page'] = 'roadmap'
+                st.rerun()
 
 
 if __name__ == "__main__":
-    main()
+    # Page routing
+    if st.session_state.get('page', 'backtest') == 'roadmap':
+        show_roadmap()
+    else:
+        main()
