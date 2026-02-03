@@ -42,7 +42,7 @@ st.set_page_config(
     page_title="S&S Analytics",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 # Professional CSS theme
@@ -137,55 +137,14 @@ st.markdown("""
         text-shadow: 1px 1px 0px #3b82f6;
     }
     
-    /* Hide sidebar */
+    /* Sidebar styling */
     [data-testid="stSidebar"] {
-        display: none;
+        background: linear-gradient(180deg, #1a1f26 0%, #0f1419 100%);
+        border-right: 1px solid #334155;
     }
     
-    /* Control card styling */
-    .control-card {
-        background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%);
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 1.25rem;
-        height: 100%;
-    }
-    
-    .control-card-header {
-        font-family: 'Press Start 2P', cursive;
-        font-size: 0.6rem;
-        color: #3b82f6;
-        margin-bottom: 1rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-    
-    /* Preset buttons */
-    .preset-btn {
-        background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-        border: 1px solid #334155;
-        border-radius: 8px;
-        padding: 0.5rem 1rem;
+    [data-testid="stSidebar"] .stMarkdown {
         color: #f8fafc;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .preset-btn:hover {
-        border-color: #3b82f6;
-        background: linear-gradient(145deg, #1e3a5f 0%, #1e293b 100%);
-    }
-    
-    .preset-btn.active {
-        border-color: #3b82f6;
-        background: linear-gradient(145deg, #1e40af 0%, #1e3a5f 100%);
-    }
-    
-    /* Compact toggle styling */
-    .stToggle label {
-        font-size: 0.85rem !important;
     }
     
     /* Input styling */
@@ -526,168 +485,236 @@ def create_yearly_returns_chart(result):
 def main():
     """Main application entry point."""
     
-    # Header row with title, ticker selector, and run button
-    header_col1, header_col2, header_col3 = st.columns([4, 2, 1])
-    
-    with header_col1:
-        st.markdown("""
-        <div style="padding: 0.5rem 0;">
-            <span class="app-title">S&S Analytics</span>
-            <span class="app-subtitle" style="margin-left: 1rem;">Pullback Strategy Backtester</span>
+    # Header
+    st.markdown("""
+    <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
+        <div class="logo-container" style="justify-content: center; margin-bottom: 0.5rem;">
+            <div class="logo-icon">📊</div>
         </div>
-        """, unsafe_allow_html=True)
+        <h1 class="app-title">S&S Analytics</h1>
+        <p class="app-subtitle">Pullback Strategy Backtesting Platform</p>
+    </div>
+    """, unsafe_allow_html=True)
     
-    with header_col2:
+    # Sidebar - Parameters
+    with st.sidebar:
+        st.markdown("## ⚙️ Strategy Parameters")
+        
+        # Asset Selection
+        st.markdown("### 🎯 Asset Selection")
         selected_ticker = st.selectbox(
-            "Asset",
+            "Select Asset",
             options=list(AVAILABLE_TICKERS.keys()),
             format_func=lambda x: f"{x} - {AVAILABLE_TICKERS[x]}",
             index=0,
-            label_visibility="collapsed"
+            help="Select the ETF/stock to backtest"
         )
-    
-    with header_col3:
-        run_button = st.button("🚀 Run", type="primary", use_container_width=True)
-    
-    st.markdown("")  # Spacing
-    
-    # Preset buttons row
-    preset_col1, preset_col2, preset_col3, preset_col4 = st.columns(4)
-    
-    # Initialize preset in session state
-    if 'preset' not in st.session_state:
-        st.session_state['preset'] = 'balanced'
-    
-    with preset_col1:
-        if st.button("🐢 Conservative", use_container_width=True):
-            st.session_state['preset'] = 'conservative'
-            st.rerun()
-    with preset_col2:
-        if st.button("⚖️ Balanced", use_container_width=True):
-            st.session_state['preset'] = 'balanced'
-            st.rerun()
-    with preset_col3:
-        if st.button("🔥 Aggressive", use_container_width=True):
-            st.session_state['preset'] = 'aggressive'
-            st.rerun()
-    with preset_col4:
-        if st.button("📈 Trend", use_container_width=True):
-            st.session_state['preset'] = 'trend'
-            st.rerun()
-    
-    # Apply preset values
-    preset = st.session_state['preset']
-    preset_values = {
-        'conservative': {'pullback': 10.0, 'stop_loss': 15.0, 'exit': 'ATH Recovery', 'rebound': 5.0, 'use_trend': True},
-        'balanced': {'pullback': 5.0, 'stop_loss': 10.0, 'exit': 'Percent Rebound', 'rebound': 5.0, 'use_trend': False},
-        'aggressive': {'pullback': 3.0, 'stop_loss': 8.0, 'exit': 'Percent Rebound', 'rebound': 3.0, 'use_trend': False},
-        'trend': {'pullback': 5.0, 'stop_loss': 10.0, 'exit': 'ATH Recovery', 'rebound': 5.0, 'use_trend': True},
-    }
-    pv = preset_values.get(preset, preset_values['balanced'])
-    
-    st.markdown("")  # Spacing
-    
-    # Control cards row - 4 columns
-    ctrl_col1, ctrl_col2, ctrl_col3, ctrl_col4 = st.columns(4)
-    
-    # ENTRY CARD
-    with ctrl_col1:
-        st.markdown('<div class="control-card"><div class="control-card-header">📥 Entry</div>', unsafe_allow_html=True)
         
-        use_ath_entry = st.toggle("ATH Pullback", value=True, key="ath_entry")
+        st.markdown("---")
+        
+        # Entry Signals - Independent Toggles (Either/Or)
+        st.markdown("### 📥 Entry Signals")
+        st.caption("Enable one or both - enters when EITHER condition is met")
+        
+        # ATH Entry Toggle
+        use_ath_entry = st.toggle(
+            "📉 ATH Pullback Entry",
+            value=True,
+            help="Enter when price drops X% from all-time high"
+        )
+        
         if use_ath_entry:
-            pullback_pct = st.slider("% from ATH", 1.0, 30.0, pv['pullback'], 0.5, key="pullback")
+            pullback_pct = st.slider(
+                "Pullback from ATH (%)",
+                min_value=1.0,
+                max_value=30.0,
+                value=5.0,
+                step=0.5,
+                help="Enter when price drops this much from all-time high"
+            )
         else:
-            pullback_pct = 5.0
+            pullback_pct = 5.0  # Default
         
-        use_atr_entry = st.toggle("ATR Pullback", value=False, key="atr_entry")
+        st.markdown("")  # Spacing
+        
+        # ATR Entry Toggle
+        use_atr_entry = st.toggle(
+            "📊 ATR Pullback Entry",
+            value=False,
+            help="Enter when price is X ATRs below the EMA"
+        )
+        
         if use_atr_entry:
-            atr_entry_multiplier = st.slider("× ATR", 0.1, 5.0, 1.5, 0.1, key="atr_mult")
-            col_a, col_b = st.columns(2)
-            with col_a:
-                ema_period = st.selectbox("EMA", [10, 20, 50, 100, 150, 200], index=1, key="ema")
-            with col_b:
-                atr_period = st.selectbox("ATR", [7, 10, 14, 20, 30], index=2, key="atr")
+            atr_entry_multiplier = st.slider(
+                "ATR Pullback (× ATR below EMA)",
+                min_value=0.1,
+                max_value=5.0,
+                value=1.5,
+                step=0.1,
+                help="Enter when price is X ATRs below the EMA"
+            )
+            
+            ema_period = st.select_slider(
+                "EMA Period",
+                options=[10, 20, 50, 100, 150, 200],
+                value=20,
+                help="Period for the Exponential Moving Average"
+            )
+            
+            atr_period = st.select_slider(
+                "ATR Period",
+                options=[7, 10, 14, 20, 30],
+                value=14,
+                help="Period for Average True Range calculation"
+            )
         else:
-            atr_entry_multiplier = 1.5
-            ema_period = 20
-            atr_period = 14
+            atr_entry_multiplier = 1.5  # Default
+            ema_period = 20  # Default
+            atr_period = 14  # Default
         
+        # Validation - at least one must be enabled
         if not use_ath_entry and not use_atr_entry:
-            st.warning("⚠️ Enable one")
+            st.warning("⚠️ Enable at least one entry signal")
         
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # EXIT CARD
-    with ctrl_col2:
-        st.markdown('<div class="control-card"><div class="control-card-header">📤 Exit</div>', unsafe_allow_html=True)
+        st.markdown("---")
         
-        exit_options = ["ATH Recovery", "Percent Rebound", "ATR Rebound"]
-        exit_idx = exit_options.index(pv['exit']) if pv['exit'] in exit_options else 0
-        exit_option = st.radio("Mode", exit_options, index=exit_idx, key="exit_mode", label_visibility="collapsed")
+        # Trend Filter
+        st.markdown("### 📈 Trend Filter")
+        
+        use_trend_filter = st.toggle(
+            "Only enter if MA is rising",
+            value=False,
+            help="Only enter trades when the moving average is trending upward"
+        )
+        
+        if use_trend_filter:
+            trend_ma_period = st.select_slider(
+                "Trend MA Period",
+                options=[20, 50, 100, 150, 200],
+                value=50,
+                help="Period for the trend moving average"
+            )
+            
+            trend_lookback = st.slider(
+                "Lookback Days",
+                min_value=1,
+                max_value=20,
+                value=5,
+                help="Compare MA to X days ago to determine if rising"
+            )
+        else:
+            trend_ma_period = 50
+            trend_lookback = 5
+        
+        st.markdown("---")
+        
+        # Exit Mode Toggle
+        st.markdown("### 📤 Exit Strategy")
+        
+        exit_option = st.radio(
+            "Exit Mode",
+            options=["ATH Recovery", "Percent Rebound", "ATR Rebound"],
+            index=0,
+            help="Choose when to exit the position"
+        )
         
         if exit_option == "ATH Recovery":
             exit_mode = ExitMode.ATH_RECOVERY
             rebound_pct = 5.0
             atr_exit_multiplier = 1.0
+            
         elif exit_option == "Percent Rebound":
             exit_mode = ExitMode.PERCENT_REBOUND
-            rebound_pct = st.slider("Rebound %", 1.0, 30.0, pv['rebound'], 0.5, key="rebound")
+            rebound_pct = st.slider(
+                "Rebound Target (%)",
+                min_value=1.0,
+                max_value=30.0,
+                value=5.0,
+                step=0.5,
+                help="Exit when position gains this percentage"
+            )
             atr_exit_multiplier = 1.0
-        else:
+            
+        else:  # ATR Rebound
             exit_mode = ExitMode.ATR_REBOUND
-            atr_exit_multiplier = st.slider("× ATR", 0.1, 5.0, 1.0, 0.1, key="atr_exit")
+            atr_exit_multiplier = st.slider(
+                "ATR Rebound (× ATR from entry)",
+                min_value=0.1,
+                max_value=5.0,
+                value=1.0,
+                step=0.1,
+                help="Exit when price rises X ATRs from entry price"
+            )
             rebound_pct = 5.0
         
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("---")
+        
+        # Risk Management
+        st.markdown("### 🛡️ Risk Management")
+        stop_loss_pct = st.slider(
+            "Stop-Loss (%)",
+            min_value=1.0,
+            max_value=50.0,
+            value=10.0,
+            step=0.5,
+            help="Exit if position drops this much from entry"
+        )
+        
+        cooloff = st.checkbox(
+            "Cool-off after stop-loss",
+            value=False,
+            help="Wait for new ATH before re-entering after a stop-loss"
+        )
+        
+        st.markdown("---")
+        
+        # Capital
+        st.markdown("### 💰 Capital")
+        initial_capital = st.number_input(
+            "Initial Capital ($)",
+            min_value=1000,
+            max_value=10000000,
+            value=10000,
+            step=1000
+        )
+        
+        st.markdown("---")
+        
+        # Data Source
+        st.markdown("### 📊 Data Source")
+        data_source = st.radio(
+            "Data Source",
+            options=["Download from Yahoo", "Sample Data"],
+            index=0
+        )
+        
+        if data_source == "Download from Yahoo":
+            start_year = st.selectbox(
+                "Start Year",
+                options=list(range(2000, 2027)),
+                index=10  # 2010
+            )
+        
+        run_button = st.button("🚀 Run Backtest", type="primary", use_container_width=True)
+        
+        st.markdown("---")
+        st.markdown("""
+        <div style="text-align: center; padding: 1rem 0; opacity: 0.6;">
+            <div style="font-size: 0.75rem; color: #94a3b8;">
+                S&S Analytics<br/>
+                <span style="font-size: 0.65rem;">Snowy & Saunders</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
     
-    # RISK CARD
-    with ctrl_col3:
-        st.markdown('<div class="control-card"><div class="control-card-header">🛡️ Risk</div>', unsafe_allow_html=True)
-        
-        stop_loss_pct = st.slider("Stop-Loss %", 1.0, 50.0, pv['stop_loss'], 0.5, key="stop_loss")
-        cooloff = st.toggle("Cool-off after stop", value=False, key="cooloff")
-        
-        st.markdown("")
-        initial_capital = st.number_input("Capital $", 1000, 10000000, 10000, 1000, key="capital")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # FILTERS & DATA CARD
-    with ctrl_col4:
-        st.markdown('<div class="control-card"><div class="control-card-header">📊 Filters & Data</div>', unsafe_allow_html=True)
-        
-        use_trend_filter = st.toggle("Trend Filter (MA rising)", value=pv['use_trend'], key="trend_filter")
-        if use_trend_filter:
-            col_a, col_b = st.columns(2)
-            with col_a:
-                trend_ma_period = st.selectbox("MA", [20, 50, 100, 150, 200], index=1, key="trend_ma")
-            with col_b:
-                trend_lookback = st.number_input("Days", 1, 20, 5, key="trend_lookback")
-        else:
-            trend_ma_period = 50
-            trend_lookback = 5
-        
-        st.markdown("")
-        data_source = st.radio("Data", ["Yahoo Finance", "Sample"], index=0, key="data_src", horizontal=True)
-        
-        if data_source == "Yahoo Finance":
-            start_year = st.selectbox("From", list(range(2000, 2027)), index=10, key="start_year")
-        else:
-            start_year = 2010
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    st.markdown("")  # Spacing
-    
-    # Main content - Results
+    # Main content
     if run_button or 'result' in st.session_state:
         
         if run_button:
             # Load data
             with st.spinner(f"Loading {selected_ticker} data..."):
                 try:
-                    if data_source == "Yahoo Finance":
+                    if data_source == "Download from Yahoo":
                         df = get_ticker_data(selected_ticker, "download", f"{start_year}-01-01")
                     else:
                         sample_path = os.path.join(os.path.dirname(__file__), "data", "sample_qqq.csv")
@@ -881,40 +908,69 @@ def main():
     else:
         # Show instructions when no backtest has been run
         st.markdown("""
-        <div style="text-align: center; padding: 3rem 2rem; background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border-radius: 12px; border: 1px solid #334155; margin: 1rem 0;">
-            <p style="color: #94a3b8; font-size: 1rem; max-width: 600px; margin: 0 auto; font-family: 'Inter', sans-serif;">
-                Configure your strategy using the controls above, then click <strong>🚀 Run</strong> to backtest.
+        <div style="text-align: center; padding: 4rem 2rem; background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border-radius: 12px; border: 1px solid #334155; margin: 2rem 0;">
+            <h2 style="color: #f8fafc; margin-bottom: 1rem; font-family: 'Inter', sans-serif;">Welcome to S&S Analytics</h2>
+            <p style="color: #94a3b8; font-size: 1rem; max-width: 600px; margin: 0 auto 1.5rem auto; font-family: 'Inter', sans-serif;">
+                Configure your strategy parameters in the sidebar, then click <strong>Run Backtest</strong> to analyse historical performance.
             </p>
-            <p style="color: #64748b; font-size: 0.85rem; margin-top: 1rem; font-family: 'Inter', sans-serif;">
-                💡 Try a preset to get started quickly, or customize each parameter.
-            </p>
+            <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-top: 2rem;">
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem;">🎯</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Select<br/>Asset</div>
+                </div>
+                <div style="font-size: 2rem; color: #3b82f6;">→</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem;">📥</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Set Entry<br/>Conditions</div>
+                </div>
+                <div style="font-size: 2rem; color: #3b82f6;">→</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem;">🛡️</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Define<br/>Risk</div>
+                </div>
+                <div style="font-size: 2rem; color: #3b82f6;">→</div>
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem;">🚀</div>
+                    <div style="color: #94a3b8; font-size: 0.85rem;">Run<br/>Backtest</div>
+                </div>
+            </div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Strategy explanation - collapsed by default
-        with st.expander("ℹ️ How the Strategy Works"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.markdown("""
-                **📥 Entry Signals** (Either/Or)
-                - **ATH Pullback**: Enter when price drops X% from all-time high
-                - **ATR Pullback**: Enter when price is X ATRs below EMA
-                
-                **📤 Exit Strategies**
-                - **ATH Recovery**: Exit at previous ATH
-                - **Percent Rebound**: Exit after X% gain
-                - **ATR Rebound**: Exit after X ATRs rise
-                """)
-            with col2:
-                st.markdown("""
-                **🛡️ Risk Management**
-                - **Stop-Loss**: Exit if position drops X%
-                - **Cool-off**: Wait for new ATH after stop
-                
-                **📊 Trend Filter**
-                - Only enter if MA is rising over X days
-                - Helps avoid downtrend entries
-                """)
+        # Strategy explanation
+        with st.expander("ℹ️ How the Strategy Works", expanded=True):
+            st.markdown("""
+            ### Entry Signals (Either/Or)
+            
+            Enable one or both entry signals. The system enters when **EITHER** condition is met:
+            
+            **📉 ATH Pullback**
+            - Track the **all-time high (ATH)** price
+            - When price **pulls back X%** from ATH, trigger entry
+            
+            **📊 ATR Pullback**
+            - Calculate the **Exponential Moving Average (EMA)**
+            - When price drops **X ATRs below the EMA**, trigger entry
+            - ATR (Average True Range) measures volatility
+            
+            ### Exit Strategies
+            
+            - **ATH Recovery**: Exit when price returns to the previous ATH
+            - **Percent Rebound**: Exit when price rebounds Y% from entry
+            - **ATR Rebound**: Exit when price rises Y ATRs from entry
+            
+            ### Trend Filter
+            
+            - **Rising MA Filter**: Only enter if the trend moving average is rising
+            - Compare current MA to X days ago
+            - Helps avoid entering during downtrends
+            
+            ### Risk Management
+            
+            - **Stop-Loss**: Exit if price drops Z% below entry
+            - **Cool-off**: Optionally wait for new ATH after stop-loss
+            - **Single Position**: Only one position at a time
+            """)
 
 
 if __name__ == "__main__":
