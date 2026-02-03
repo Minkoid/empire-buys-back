@@ -48,7 +48,7 @@ st.set_page_config(
 # Professional CSS theme
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap');
     
     :root {
         --bg-primary: #0f1419;
@@ -75,16 +75,18 @@ st.markdown("""
     }
     
     h1, h2, h3 {
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 600 !important;
+        font-family: 'Press Start 2P', cursive !important;
+        font-weight: 400 !important;
+        font-size: 0.9rem !important;
     }
     
     .app-title {
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 700 !important;
-        font-size: 2.2rem !important;
+        font-family: 'Press Start 2P', cursive !important;
+        font-weight: 400 !important;
+        font-size: 1.6rem !important;
         color: #f8fafc !important;
-        letter-spacing: -0.02em;
+        letter-spacing: 0.05em;
+        text-shadow: 2px 2px 0px #3b82f6, 4px 4px 0px rgba(59, 130, 246, 0.3);
     }
     
     .app-subtitle {
@@ -111,12 +113,12 @@ st.markdown("""
     }
     
     .metric-label {
-        font-family: 'Inter', sans-serif;
-        font-size: 0.8rem;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.5rem;
         color: #94a3b8;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 500;
+        letter-spacing: 0.02em;
+        font-weight: 400;
     }
     
     .positive { color: #22c55e !important; }
@@ -125,13 +127,14 @@ st.markdown("""
     .warning { color: #f59e0b !important; }
     
     .section-header {
-        font-family: 'Inter', sans-serif;
-        font-size: 1.25rem;
-        font-weight: 600;
+        font-family: 'Press Start 2P', cursive;
+        font-size: 0.85rem;
+        font-weight: 400;
         color: #f8fafc;
         margin: 2rem 0 1rem 0;
         padding-bottom: 0.5rem;
         border-bottom: 2px solid #3b82f6;
+        text-shadow: 1px 1px 0px #3b82f6;
     }
     
     /* Sidebar styling */
