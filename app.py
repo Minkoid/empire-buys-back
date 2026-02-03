@@ -752,7 +752,7 @@ def main():
     """Main application entry point."""
     
     # Header row with title, ticker selector, and run button
-    header_col1, header_col2, header_col3 = st.columns([4, 2, 1])
+    header_col1, header_col2, header_col3, header_col4 = st.columns([3, 2, 1, 1])
     
     with header_col1:
         st.markdown("""
@@ -773,6 +773,11 @@ def main():
     
     with header_col3:
         run_button = st.button("🚀 Run", type="primary", use_container_width=True)
+    
+    with header_col4:
+        if st.button("📋 Roadmap", use_container_width=True):
+            st.session_state['page'] = 'roadmap'
+            st.rerun()
     
     st.markdown("")  # Spacing
     
@@ -1140,14 +1145,6 @@ def main():
                 - Only enter if MA is rising over X days
                 - Helps avoid downtrend entries
                 """)
-        
-        # Roadmap button
-        st.markdown("")
-        roadmap_col1, roadmap_col2, roadmap_col3 = st.columns([1, 2, 1])
-        with roadmap_col2:
-            if st.button("🚀 View Upgrade Roadmap", use_container_width=True):
-                st.session_state['page'] = 'roadmap'
-                st.rerun()
 
 
 if __name__ == "__main__":
