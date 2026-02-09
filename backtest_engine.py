@@ -459,3 +459,223 @@ def download_ticker_data(ticker_symbol: str = "QQQ", start_date: str = "2000-01-
 def download_qqq_data(start_date: str = "2000-01-01", end_date: Optional[str] = None) -> pd.DataFrame:
     """Backwards compatible wrapper for download_ticker_data."""
     return download_ticker_data("QQQ", start_date, end_date)
+
+
+def prepare_data_for_batch(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Prepare data with pre-calculated indicators for batch backtesting.
+    Call this once before running many backtests on the same data.
+    
+    Returns:
+        DataFrame with ATH, and common indicator periods pre-calculated
+    """
+    df = df.copy()
+    if 'Date' in df.columns:
+        df['Date'] = pd.to_datetime(df['Date'])
+        df = df.set_index('Date')
+    df = df.sort_index()
+    
+    # Pre-calculate ATH
+    df['ATH'] = df['Close'].cummax()
+    
+    # Pre-calculate common EMA periods
+    for period in [20, 50, 100]:
+        df[f'EMA_{period}'] = calculate_ema(df['Close'], period)
+    
+    # Pre-calculate common ATR periods
+    for period in [14]:
+        df[f'ATR_{period}'] = calculate_atr(df, period)
+    
+    # Pre-calculate Trend MAs
+    for period in [50, 100, 200]:
+        df[f'TrendMA_{period}'] = calculate_ema(df['Close'], period)
+    
+    return df
+
+
+def run_backtest_fast(df_prepared: pd.DataFrame, config: BacktestConfig) -> dict:
+    """
+    Fast backtest for batch optimization - returns only key metrics.
+    Expects pre-prepared data from prepare_data_for_batch().
+    
+    Args:
+        df_prepared: Pre-processed DataFrame with indicators
+        config: Backtest configuration
+        
+    Returns:
+        Dict with key metrics: cagr, total_return_pct, max_drawdown_pct, win_rate, total_trades, profit_factor
+    """
+    df = df_prepared
+    
+    # Use pre-calculated indicators or calculate if not available
+    ema_col = f'EMA_{config.ema_period}' if f'EMA_{config.ema_period}' in df.columns else None
+    atr_col = f'ATR_{config.atr_period}' if f'ATR_{config.atr_period}' in df.columns else None
+    trend_col = f'TrendMA_{config.trend_ma_period}' if f'TrendMA_{config.trend_ma_period}' in df.columns else None
+    
+    # If columns don't exist, calculate them
+    if ema_col is None:
+        df = df.copy()
+        df['_EMA'] = calculate_ema(df['Close'], config.ema_period)
+        ema_col = '_EMA'
+    if atr_col is None:
+        if '_EMA' not in df.columns:
+            df = df.copy()
+        df['_ATR'] = calculate_atr(df, config.atr_period)
+        atr_col = '_ATR'
+    if trend_col is None:
+        if '_EMA' not in df.columns and '_ATR' not in df.columns:
+            df = df.copy()
+        df['_TrendMA'] = calculate_ema(df['Close'], config.trend_ma_period)
+        trend_col = '_TrendMA'
+    
+    # Initialize
+    capital = config.initial_capital
+    in_position = False
+    entry_price = 0.0
+    entry_atr = 0.0
+    shares = 0.0
+    ath_at_entry = 0.0
+    waiting_for_new_ath = False
+    
+    trades_pnl = []
+    peak_equity = capital
+    max_drawdown = 0.0
+    
+    # Get arrays for speed
+    closes = df['Close'].values
+    aths = df['ATH'].values if 'ATH' in df.columns else df['Close'].cummax().values
+    emas = df[ema_col].values
+    atrs = df[atr_col].values
+    trend_mas = df[trend_col].values
+    dates = df.index
+    
+    start_idx = max(config.ema_period, config.atr_period, config.trend_ma_period)
+    current_ath = closes[0]
+    
+    for i in range(len(closes)):
+        price = closes[i]
+        
+        # Update ATH
+        if price > current_ath:
+            current_ath = price
+            waiting_for_new_ath = False
+        
+        # Track equity and drawdown
+        if in_position:
+            current_equity = shares * price
+        else:
+            current_equity = capital
+        
+        if current_equity > peak_equity:
+            peak_equity = current_equity
+        dd = (peak_equity - current_equity) / peak_equity * 100 if peak_equity > 0 else 0
+        if dd > max_drawdown:
+            max_drawdown = dd
+        
+        # Skip until indicators ready
+        if i < start_idx:
+            continue
+        
+        ema = emas[i]
+        atr = atrs[i]
+        trend_ma = trend_mas[i]
+        
+        if np.isnan(atr) or np.isnan(ema) or np.isnan(trend_ma):
+            continue
+        
+        if in_position:
+            # Check exits
+            current_pnl_pct = (price - entry_price) / entry_price * 100
+            exit_triggered = False
+            
+            # Stop-loss
+            if current_pnl_pct <= -config.stop_loss_pct:
+                exit_triggered = True
+                if config.cooloff_after_stop:
+                    waiting_for_new_ath = True
+            # ATH Recovery
+            elif config.exit_mode == ExitMode.ATH_RECOVERY and price >= ath_at_entry:
+                exit_triggered = True
+            # Percent Rebound
+            elif config.exit_mode == ExitMode.PERCENT_REBOUND and current_pnl_pct >= config.rebound_pct:
+                exit_triggered = True
+            # ATR Rebound
+            elif config.exit_mode == ExitMode.ATR_REBOUND:
+                atr_move = (price - entry_price) / entry_atr if entry_atr > 0 else 0
+                if atr_move >= config.atr_exit_multiplier:
+                    exit_triggered = True
+            
+            if exit_triggered:
+                pnl_pct = (price - entry_price) / entry_price * 100
+                trades_pnl.append(pnl_pct)
+                capital = shares * price
+                in_position = False
+                shares = 0.0
+        
+        else:
+            if waiting_for_new_ath:
+                continue
+            
+            # Check entry signals
+            ath_signal = False
+            atr_signal = False
+            
+            if config.use_ath_entry:
+                pullback_pct_val = (current_ath - price) / current_ath * 100
+                if pullback_pct_val >= config.pullback_pct:
+                    ath_signal = True
+            
+            if config.use_atr_entry and atr > 0:
+                atr_distance = (ema - price) / atr
+                if atr_distance >= config.atr_entry_multiplier:
+                    atr_signal = True
+            
+            if ath_signal or atr_signal:
+                entry_signal = True
+                if config.use_trend_filter:
+                    lookback_idx = max(0, i - config.trend_lookback)
+                    trend_ma_prev = trend_mas[lookback_idx]
+                    if np.isnan(trend_ma_prev) or trend_ma <= trend_ma_prev:
+                        entry_signal = False
+                
+                if entry_signal:
+                    entry_price = price
+                    entry_atr = atr
+                    shares = capital / price
+                    ath_at_entry = current_ath
+                    in_position = True
+    
+    # Close open position
+    if in_position:
+        pnl_pct = (closes[-1] - entry_price) / entry_price * 100
+        trades_pnl.append(pnl_pct)
+        capital = shares * closes[-1]
+    
+    # Calculate metrics
+    total_trades = len(trades_pnl)
+    winning_trades = sum(1 for p in trades_pnl if p > 0)
+    win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0.0
+    
+    total_return_pct = (capital - config.initial_capital) / config.initial_capital * 100
+    
+    total_days = (dates[-1] - dates[0]).days
+    years = total_days / 365.25
+    if years > 0 and capital > 0:
+        cagr = (pow(capital / config.initial_capital, 1 / years) - 1) * 100
+    else:
+        cagr = 0.0
+    
+    wins = [p for p in trades_pnl if p > 0]
+    losses = [p for p in trades_pnl if p <= 0]
+    total_wins = sum(wins) if wins else 0
+    total_losses = abs(sum(losses)) if losses else 0
+    profit_factor = (total_wins / total_losses) if total_losses > 0 else 999.99
+    
+    return {
+        'cagr': cagr,
+        'total_return_pct': total_return_pct,
+        'max_drawdown_pct': max_drawdown,
+        'win_rate': win_rate,
+        'total_trades': total_trades,
+        'profit_factor': profit_factor
+    }

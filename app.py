@@ -17,6 +17,8 @@ from backtest_engine import (
     BacktestConfig,
     ExitMode,
     run_backtest,
+    run_backtest_fast,
+    prepare_data_for_batch,
     load_data_from_csv,
     download_ticker_data
 )
@@ -899,15 +901,16 @@ def show_optimizer():
         if total_combinations > 2000:
             st.warning(f"⚠️ {total_combinations} combinations may take a while. Consider reducing ranges.")
         
-        # Load data once
-        with st.spinner(f"Loading {opt_ticker} data..."):
+        # Load data once and prepare for batch processing
+        with st.spinner(f"Loading and preparing {opt_ticker} data..."):
             try:
                 df = get_ticker_data(opt_ticker, "download", f"{opt_start_year}-{opt_start_month:02d}-01")
+                df_prepared = prepare_data_for_batch(df)
             except Exception as e:
                 st.error(f"Error loading data: {str(e)}")
                 return
         
-        # Run grid search
+        # Run grid search with fast backtest
         results = []
         progress_bar = st.progress(0)
         status_text = st.empty()
@@ -915,11 +918,15 @@ def show_optimizer():
         # Build all combinations
         all_combos = list(itertools.product(pullback_vals, rebound_vals, stoploss_vals, exit_modes_list, trend_list))
         
+        # Update progress less frequently for speed
+        update_interval = max(1, len(all_combos) // 50)
+        
         for i, (pb, rb, sl, exit_mode_str, use_trend) in enumerate(all_combos):
-            # Update progress
-            progress = (i + 1) / len(all_combos)
-            progress_bar.progress(progress)
-            status_text.text(f"Testing {i+1}/{len(all_combos)}: Pullback {pb}%, Rebound {rb}%, Stop-Loss {sl}%")
+            # Update progress less frequently
+            if i % update_interval == 0:
+                progress = (i + 1) / len(all_combos)
+                progress_bar.progress(progress)
+                status_text.text(f"Testing {i+1}/{len(all_combos)} combinations...")
             
             # Set exit mode
             if exit_mode_str == "ATH Recovery":
@@ -946,21 +953,21 @@ def show_optimizer():
                 cooloff_after_stop=False
             )
             
-            # Run backtest
+            # Run fast backtest
             try:
-                result = run_backtest(df, config)
+                result = run_backtest_fast(df_prepared, config)
                 results.append({
                     'Pullback %': pb,
                     'Rebound %': rb,
                     'Stop-Loss %': sl,
                     'Exit Mode': exit_mode_str,
                     'Trend Filter': 'On' if use_trend else 'Off',
-                    'CAGR %': round(result.cagr, 2),
-                    'Total Return %': round(result.total_return_pct, 2),
-                    'Max Drawdown %': round(result.max_drawdown_pct, 2),
-                    'Win Rate %': round(result.win_rate, 2),
-                    'Total Trades': result.total_trades,
-                    'Profit Factor': round(result.profit_factor, 2) if result.profit_factor != float('inf') else 999.99
+                    'CAGR %': round(result['cagr'], 2),
+                    'Total Return %': round(result['total_return_pct'], 2),
+                    'Max Drawdown %': round(result['max_drawdown_pct'], 2),
+                    'Win Rate %': round(result['win_rate'], 2),
+                    'Total Trades': result['total_trades'],
+                    'Profit Factor': round(result['profit_factor'], 2)
                 })
             except Exception as e:
                 continue
