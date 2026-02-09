@@ -751,6 +751,221 @@ def show_roadmap():
     """, unsafe_allow_html=True)
 
 
+def show_guide():
+    """Display the documentation/guide page."""
+    
+    # Back button
+    if st.button("← Back to Backtester"):
+        st.session_state['page'] = 'backtest'
+        st.rerun()
+    
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📖</div>
+        <h1 class="app-title">User Guide</h1>
+        <p class="app-subtitle">How to use S&S Analytics to find winning strategies</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Overview
+    st.markdown('<div class="section-header">🎯 What is S&S Analytics?</div>', unsafe_allow_html=True)
+    st.markdown("""
+    S&S Analytics is a **backtesting tool** that lets you test "buy the dip" trading strategies on historical stock data.
+    
+    **The core idea:**
+    1. When a stock drops by a certain percentage from its peak → **BUY**
+    2. When it recovers by a target amount (or hits your stop-loss) → **SELL**
+    3. Repeat over many years and measure the results
+    
+    You can test different parameters to find the strategy that would have performed best historically.
+    """)
+    
+    st.markdown("")
+    
+    # Key Terms
+    st.markdown('<div class="section-header">📚 Key Terms Explained</div>', unsafe_allow_html=True)
+    
+    terms_col1, terms_col2 = st.columns(2)
+    
+    with terms_col1:
+        st.markdown("""
+        **ATH (All-Time High)**
+        > The highest price a stock has ever reached. We track this to measure how far price has "dipped".
+        
+        **Pullback %**
+        > How far price must drop from ATH before we buy. Example: 5% pullback means if ATH is $100, we buy at $95.
+        
+        **Rebound %**
+        > Our profit target. Example: 5% rebound means if we bought at $95, we sell at $99.75 (5% gain).
+        
+        **Stop-Loss %**
+        > Maximum loss we accept. Example: 10% stop-loss means if we bought at $95, we sell at $85.50 to cut losses.
+        
+        **CAGR (Compound Annual Growth Rate)**
+        > The average yearly return. A 15% CAGR means your money grows about 15% per year on average.
+        """)
+    
+    with terms_col2:
+        st.markdown("""
+        **ATR (Average True Range)**
+        > A measure of how much a stock typically moves each day. Used for volatility-based entries/exits.
+        
+        **EMA (Exponential Moving Average)**
+        > A smoothed average of recent prices. Used as a reference point for ATR-based strategies.
+        
+        **Trend Filter**
+        > Only enter trades when the market is trending upward. Helps avoid buying during crashes.
+        
+        **Max Drawdown**
+        > The worst peak-to-trough decline during the backtest. Shows the biggest loss you would have experienced.
+        
+        **Win Rate**
+        > Percentage of trades that were profitable. 60% win rate = 6 out of 10 trades made money.
+        """)
+    
+    st.markdown("")
+    
+    # How to use - Manual Backtest
+    st.markdown('<div class="section-header">🚀 How to Use: Manual Backtest</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    The main screen lets you test **one specific strategy**:
+    
+    **Step 1: Choose your asset**
+    > Select from QQQ (Nasdaq-100), SPY (S&P 500), Gold, etc.
+    
+    **Step 2: Set entry conditions**
+    > - **ATH Pullback**: Buy when price drops X% from its all-time high
+    > - **ATR Pullback**: Buy when price drops X ATRs below the moving average (more advanced)
+    > - You can enable one or both (system buys when EITHER triggers)
+    
+    **Step 3: Set exit conditions**
+    > - **ATH Recovery**: Sell when price returns to the previous high
+    > - **Percent Rebound**: Sell after gaining X% from your entry price
+    > - **ATR Rebound**: Sell after rising X ATRs from entry (volatility-based)
+    
+    **Step 4: Set risk management**
+    > - **Stop-Loss**: Maximum loss before cutting the trade
+    > - **Cool-off**: Wait for new high before re-entering after a stop-loss
+    
+    **Step 5: Click "Run" and review results**
+    > See your total return, CAGR, win rate, charts, and every individual trade.
+    """)
+    
+    st.markdown("")
+    
+    # How to use - Strategy Finder
+    st.markdown('<div class="section-header">🔍 How to Use: Strategy Finder</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    The Strategy Finder **automates** the process of testing many strategies:
+    
+    **Instead of manually testing:**
+    > "What if pullback is 5%?" → Run → Note result  
+    > "What if pullback is 6%?" → Run → Note result  
+    > "What if pullback is 7%?" → Run → Note result...
+    
+    **The Strategy Finder does this automatically:**
+    > Set ranges (e.g., pullback 3-10%) → Click once → See all results ranked
+    
+    ---
+    
+    **How to find a good strategy:**
+    
+    1. **Start with wide ranges** - Pullback 2-15%, Rebound 2-15%, Stop-Loss 5-20%
+    2. **Run the search** - Let it test hundreds of combinations
+    3. **Look at the results table** - Sorted by CAGR (best at top)
+    4. **Check the yearly columns** - Make sure the top strategies don't have terrible years
+    5. **Pick strategies with good CAGR AND reasonable worst year**
+    
+    ---
+    
+    **Reading the results:**
+    
+    | Column | What it means |
+    |--------|---------------|
+    | CAGR % | Average yearly return over the whole period |
+    | Total Return % | Total profit from start to finish |
+    | Max Drawdown % | Biggest loss during the period |
+    | Win Rate % | Percentage of profitable trades |
+    | Worst Year % | Return in the worst single year |
+    | 2020, 2021, etc. | Return for each individual year |
+    
+    **A good strategy has:**
+    - High CAGR (15%+ is good, 25%+ is excellent)
+    - Reasonable drawdown (under 30%)
+    - Worst year not catastrophic (better than -20%)
+    - Consistent positive years
+    """)
+    
+    st.markdown("")
+    
+    # Consistency Check
+    st.markdown('<div class="section-header">✅ Consistency Check</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    The **"Validate across multiple years"** option filters strategies that perform well EVERY year:
+    
+    **How it works:**
+    - Tests each strategy on 2020, 2021, 2022, 2023, and 2024 individually
+    - Only shows strategies that meet your minimum return in ALL years
+    
+    **When to use it:**
+    - Set to a LOW threshold (5-10%) to find strategies that never have terrible years
+    - High thresholds (30%+) are very strict - few strategies will pass
+    
+    **Warning:** A strategy that made 30% in 2020, 2021, 2023, 2024 but -10% in 2022 might still be excellent overall!
+    The consistency check with 30% threshold would reject it. Use low thresholds or turn it off initially.
+    """)
+    
+    st.markdown("")
+    
+    # Tips
+    st.markdown('<div class="section-header">💡 Pro Tips</div>', unsafe_allow_html=True)
+    
+    tips_col1, tips_col2 = st.columns(2)
+    
+    with tips_col1:
+        st.markdown("""
+        **Finding good strategies:**
+        - Start with the Strategy Finder on wide ranges
+        - Look for high CAGR with reasonable worst year
+        - Test your favorites manually on different time periods
+        - Be skeptical of strategies with very few trades
+        
+        **Interpreting results:**
+        - Past performance ≠ future results
+        - More trades = more statistical significance
+        - Very high returns often come with high risk
+        - Check 2022 specifically (bear market stress test)
+        """)
+    
+    with tips_col2:
+        st.markdown("""
+        **Common mistakes:**
+        - Optimizing for highest CAGR without checking drawdown
+        - Ignoring strategies with moderate but consistent returns
+        - Over-fitting to specific time periods
+        - Setting stop-loss too tight (gets stopped out constantly)
+        
+        **Good defaults to start:**
+        - Pullback: 5%
+        - Rebound: 5-10%
+        - Stop-Loss: 10-15%
+        - Exit Mode: Percent Rebound
+        """)
+    
+    st.markdown("")
+    
+    # Footer
+    st.markdown("""
+    <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
+        <div style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">S&S Analytics</div>
+        <p style="color: #94a3b8; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def show_optimizer():
     """Display the optimizer page for grid search parameter optimization."""
     import itertools
@@ -1148,13 +1363,12 @@ def main():
     """Main application entry point."""
     
     # Header row with title, ticker selector, and run button
-    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([3, 2, 1, 1, 1])
+    header_col1, header_col2, header_col3, header_col4, header_col5, header_col6 = st.columns([3, 1.5, 0.8, 0.8, 0.8, 0.8])
     
     with header_col1:
         st.markdown("""
         <div style="padding: 0.5rem 0;">
             <span class="app-title">S&S Analytics</span>
-            <span class="app-subtitle" style="margin-left: 1rem;">Pullback Strategy Backtester</span>
         </div>
         """, unsafe_allow_html=True)
     
@@ -1178,7 +1392,12 @@ def main():
             st.rerun()
     
     with header_col5:
-        if st.button("📋 Roadmap", use_container_width=True, help="View the planned future upgrades for S&S Analytics"):
+        if st.button("📖 Guide", use_container_width=True, help="Learn how to use S&S Analytics and understand the key concepts"):
+            st.session_state['page'] = 'guide'
+            st.rerun()
+    
+    with header_col6:
+        if st.button("📋 Plan", use_container_width=True, help="View the planned future upgrades for S&S Analytics"):
             st.session_state['page'] = 'roadmap'
             st.rerun()
     
@@ -1550,5 +1769,7 @@ if __name__ == "__main__":
         show_roadmap()
     elif current_page == 'optimizer':
         show_optimizer()
+    elif current_page == 'guide':
+        show_guide()
     else:
         main()
