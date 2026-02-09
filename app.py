@@ -34,6 +34,7 @@ AVAILABLE_TICKERS = {
     "ARKK": "ARK Innovation ETF",
     "GLD": "Gold ETF",
     "SLV": "Silver ETF",
+    "^N225": "Nikkei 225 (Japan)",
 }
 
 
@@ -871,9 +872,15 @@ def main():
         data_source = st.radio("Data", ["Yahoo Finance", "Sample"], index=0, key="data_src", horizontal=True)
         
         if data_source == "Yahoo Finance":
-            start_year = st.selectbox("From", list(range(2000, 2027)), index=10, key="start_year")
+            date_col1, date_col2 = st.columns(2)
+            with date_col1:
+                start_year = st.selectbox("Year", list(range(2000, 2027)), index=10, key="start_year")
+            with date_col2:
+                start_month = st.selectbox("Month", list(range(1, 13)), index=0, key="start_month", 
+                                           format_func=lambda x: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][x-1])
         else:
             start_year = 2010
+            start_month = 1
         
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -887,7 +894,7 @@ def main():
             with st.spinner(f"Loading {selected_ticker} data..."):
                 try:
                     if data_source == "Yahoo Finance":
-                        df = get_ticker_data(selected_ticker, "download", f"{start_year}-01-01")
+                        df = get_ticker_data(selected_ticker, "download", f"{start_year}-{start_month:02d}-01")
                     else:
                         sample_path = os.path.join(os.path.dirname(__file__), "data", "sample_qqq.csv")
                         if os.path.exists(sample_path):
