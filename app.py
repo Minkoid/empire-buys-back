@@ -926,27 +926,25 @@ def show_optimizer():
         # Load data once and prepare for batch processing
         with st.spinner(f"Loading and preparing {opt_ticker} data..."):
             try:
+                import datetime
                 df_full = get_ticker_data(opt_ticker, "download", f"{opt_start_year}-{opt_start_month:02d}-01")
                 df_prepared = prepare_data_for_batch(df_full)
                 
-                # If consistency check enabled, prepare last 5 years of data separately
+                # Always prepare yearly data for breakdown display
                 yearly_data = {}
-                if use_consistency_check:
-                    import datetime
-                    current_year = datetime.datetime.now().year
-                    for year in range(current_year - 5, current_year):
-                        year_start = f"{year}-01-01"
-                        year_end = f"{year}-12-31"
-                        try:
-                            df_year = get_ticker_data(opt_ticker, "download", year_start)
-                            # Filter to just that year
-                            df_year_copy = df_year.copy()
-                            if 'Date' in df_year_copy.columns:
-                                df_year_copy['Date'] = pd.to_datetime(df_year_copy['Date'])
-                                df_year_copy = df_year_copy[df_year_copy['Date'].dt.year == year]
-                            yearly_data[year] = prepare_data_for_batch(df_year_copy) if len(df_year_copy) > 50 else None
-                        except:
-                            yearly_data[year] = None
+                current_year = datetime.datetime.now().year
+                years_to_check = list(range(current_year - 5, current_year))
+                
+                for year in years_to_check:
+                    try:
+                        df_year = get_ticker_data(opt_ticker, "download", f"{year}-01-01")
+                        df_year_copy = df_year.copy()
+                        if 'Date' in df_year_copy.columns:
+                            df_year_copy['Date'] = pd.to_datetime(df_year_copy['Date'])
+                            df_year_copy = df_year_copy[df_year_copy['Date'].dt.year == year]
+                        yearly_data[year] = prepare_data_for_batch(df_year_copy) if len(df_year_copy) > 50 else None
+                    except:
+                        yearly_data[year] = None
             except Exception as e:
                 st.error(f"Error loading data: {str(e)}")
                 return
@@ -1001,22 +999,27 @@ def show_optimizer():
             try:
                 result = run_backtest_fast(df_prepared, config)
                 
+                # Always calculate yearly returns for breakdown
+                yearly_returns = {}
+                for year, df_year in yearly_data.items():
+                    if df_year is not None and len(df_year) > 20:
+                        try:
+                            year_result = run_backtest_fast(df_year, config)
+                            yearly_returns[year] = year_result['total_return_pct']
+                        except:
+                            yearly_returns[year] = None
+                
                 # Consistency check - verify strategy works across all years
                 passes_consistency = True
-                yearly_cagrs = []
-                
                 if use_consistency_check:
                     years_checked = 0
-                    for year, df_year in yearly_data.items():
-                        if df_year is not None and len(df_year) > 20:
-                            try:
-                                year_result = run_backtest_fast(df_year, config)
-                                yearly_cagrs.append(year_result['cagr'])
-                                years_checked += 1
-                                if year_result['cagr'] < min_cagr_threshold:
-                                    passes_consistency = False
-                            except:
-                                pass
+                    for year, ret in yearly_returns.items():
+                        if ret is not None:
+                            years_checked += 1
+                            # For consistency, check if return meets threshold
+                            # (using total return since it's a single year)
+                            if ret < min_cagr_threshold:
+                                passes_consistency = False
                     
                     # Need at least 3 years of data to validate
                     if years_checked < 3:
@@ -1037,10 +1040,15 @@ def show_optimizer():
                         'Profit Factor': round(result['profit_factor'], 2)
                     }
                     
-                    # Add yearly breakdown if consistency check was used
-                    if use_consistency_check and yearly_cagrs:
-                        result_row['Min Year CAGR %'] = round(min(yearly_cagrs), 2)
-                        result_row['Avg Year CAGR %'] = round(sum(yearly_cagrs) / len(yearly_cagrs), 2)
+                    # Add yearly breakdown columns
+                    valid_returns = [r for r in yearly_returns.values() if r is not None]
+                    if valid_returns:
+                        result_row['Worst Year %'] = round(min(valid_returns), 1)
+                        result_row['Best Year %'] = round(max(valid_returns), 1)
+                        # Add individual year columns
+                        for year in sorted(yearly_returns.keys()):
+                            if yearly_returns[year] is not None:
+                                result_row[str(year)] = round(yearly_returns[year], 1)
                     
                     results.append(result_row)
             except Exception as e:
