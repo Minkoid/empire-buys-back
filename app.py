@@ -831,6 +831,28 @@ def show_optimizer():
             help="Whether to test with trend filter on, off, or both"
         )
         
+        st.markdown("")
+        st.markdown("**Consistency Check**")
+        use_consistency_check = st.toggle(
+            "Validate across multiple years",
+            value=False,
+            key="opt_consistency",
+            help="Test each strategy across the last 5 years individually and only show strategies that meet the minimum CAGR in ALL periods"
+        )
+        
+        if use_consistency_check:
+            min_cagr_threshold = st.number_input(
+                "Min CAGR % per year",
+                min_value=1.0,
+                max_value=100.0,
+                value=30.0,
+                step=5.0,
+                key="opt_min_cagr",
+                help="Strategy must achieve at least this CAGR in each of the last 5 individual years"
+            )
+        else:
+            min_cagr_threshold = 0.0
+        
         st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("")
@@ -904,8 +926,27 @@ def show_optimizer():
         # Load data once and prepare for batch processing
         with st.spinner(f"Loading and preparing {opt_ticker} data..."):
             try:
-                df = get_ticker_data(opt_ticker, "download", f"{opt_start_year}-{opt_start_month:02d}-01")
-                df_prepared = prepare_data_for_batch(df)
+                df_full = get_ticker_data(opt_ticker, "download", f"{opt_start_year}-{opt_start_month:02d}-01")
+                df_prepared = prepare_data_for_batch(df_full)
+                
+                # If consistency check enabled, prepare last 5 years of data separately
+                yearly_data = {}
+                if use_consistency_check:
+                    import datetime
+                    current_year = datetime.datetime.now().year
+                    for year in range(current_year - 5, current_year):
+                        year_start = f"{year}-01-01"
+                        year_end = f"{year}-12-31"
+                        try:
+                            df_year = get_ticker_data(opt_ticker, "download", year_start)
+                            # Filter to just that year
+                            df_year_copy = df_year.copy()
+                            if 'Date' in df_year_copy.columns:
+                                df_year_copy['Date'] = pd.to_datetime(df_year_copy['Date'])
+                                df_year_copy = df_year_copy[df_year_copy['Date'].dt.year == year]
+                            yearly_data[year] = prepare_data_for_batch(df_year_copy) if len(df_year_copy) > 50 else None
+                        except:
+                            yearly_data[year] = None
             except Exception as e:
                 st.error(f"Error loading data: {str(e)}")
                 return
@@ -926,7 +967,10 @@ def show_optimizer():
             if i % update_interval == 0:
                 progress = (i + 1) / len(all_combos)
                 progress_bar.progress(progress)
-                status_text.text(f"Testing {i+1}/{len(all_combos)} combinations...")
+                if use_consistency_check:
+                    status_text.text(f"Testing {i+1}/{len(all_combos)} combinations (with 5-year consistency check)...")
+                else:
+                    status_text.text(f"Testing {i+1}/{len(all_combos)} combinations...")
             
             # Set exit mode
             if exit_mode_str == "ATH Recovery":
@@ -953,22 +997,52 @@ def show_optimizer():
                 cooloff_after_stop=False
             )
             
-            # Run fast backtest
+            # Run fast backtest on full period
             try:
                 result = run_backtest_fast(df_prepared, config)
-                results.append({
-                    'Pullback %': pb,
-                    'Rebound %': rb,
-                    'Stop-Loss %': sl,
-                    'Exit Mode': exit_mode_str,
-                    'Trend Filter': 'On' if use_trend else 'Off',
-                    'CAGR %': round(result['cagr'], 2),
-                    'Total Return %': round(result['total_return_pct'], 2),
-                    'Max Drawdown %': round(result['max_drawdown_pct'], 2),
-                    'Win Rate %': round(result['win_rate'], 2),
-                    'Total Trades': result['total_trades'],
-                    'Profit Factor': round(result['profit_factor'], 2)
-                })
+                
+                # Consistency check - verify strategy works across all years
+                passes_consistency = True
+                yearly_cagrs = []
+                
+                if use_consistency_check:
+                    years_checked = 0
+                    for year, df_year in yearly_data.items():
+                        if df_year is not None and len(df_year) > 20:
+                            try:
+                                year_result = run_backtest_fast(df_year, config)
+                                yearly_cagrs.append(year_result['cagr'])
+                                years_checked += 1
+                                if year_result['cagr'] < min_cagr_threshold:
+                                    passes_consistency = False
+                            except:
+                                pass
+                    
+                    # Need at least 3 years of data to validate
+                    if years_checked < 3:
+                        passes_consistency = False
+                
+                if passes_consistency:
+                    result_row = {
+                        'Pullback %': pb,
+                        'Rebound %': rb,
+                        'Stop-Loss %': sl,
+                        'Exit Mode': exit_mode_str,
+                        'Trend Filter': 'On' if use_trend else 'Off',
+                        'CAGR %': round(result['cagr'], 2),
+                        'Total Return %': round(result['total_return_pct'], 2),
+                        'Max Drawdown %': round(result['max_drawdown_pct'], 2),
+                        'Win Rate %': round(result['win_rate'], 2),
+                        'Total Trades': result['total_trades'],
+                        'Profit Factor': round(result['profit_factor'], 2)
+                    }
+                    
+                    # Add yearly breakdown if consistency check was used
+                    if use_consistency_check and yearly_cagrs:
+                        result_row['Min Year CAGR %'] = round(min(yearly_cagrs), 2)
+                        result_row['Avg Year CAGR %'] = round(sum(yearly_cagrs) / len(yearly_cagrs), 2)
+                    
+                    results.append(result_row)
             except Exception as e:
                 continue
         
@@ -984,6 +1058,9 @@ def show_optimizer():
             # Store in session state
             st.session_state['optimization_results'] = results_df
             st.session_state['optimization_ticker'] = opt_ticker
+            st.session_state['used_consistency'] = use_consistency_check
+        else:
+            st.warning("No strategies passed the consistency check. Try lowering the minimum CAGR threshold.")
     
     # Display results if available
     if 'optimization_results' in st.session_state:
@@ -991,7 +1068,11 @@ def show_optimizer():
         opt_ticker_result = st.session_state.get('optimization_ticker', 'Unknown')
         
         st.markdown("")
-        st.markdown(f'<div class="section-header">🏆 Results for {opt_ticker_result} ({len(results_df)} strategies tested)</div>', unsafe_allow_html=True)
+        used_consistency = st.session_state.get('used_consistency', False)
+        if used_consistency:
+            st.markdown(f'<div class="section-header">🏆 Results for {opt_ticker_result} ({len(results_df)} strategies passed consistency check)</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="section-header">🏆 Results for {opt_ticker_result} ({len(results_df)} strategies tested)</div>', unsafe_allow_html=True)
         
         # Top 3 highlight
         if len(results_df) >= 1:
