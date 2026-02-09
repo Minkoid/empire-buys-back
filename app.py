@@ -760,14 +760,14 @@ def show_optimizer():
     
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔬</div>
-        <h1 class="app-title">Strategy Optimizer</h1>
-        <p class="app-subtitle">Automatically find the best parameters for maximum CAGR</p>
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔍</div>
+        <h1 class="app-title">Strategy Finder</h1>
+        <p class="app-subtitle">Automatically test many combinations to find the best strategy</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Explanation
-    with st.expander("ℹ️ How the Optimizer Works", expanded=False):
+    with st.expander("ℹ️ How the Strategy Finder Works", expanded=False):
         st.markdown("""
         **Grid Search** tests every combination of parameters within the ranges you specify.
         
@@ -1077,7 +1077,7 @@ def main():
                                help="Execute the backtest with current parameters and display results")
     
     with header_col4:
-        if st.button("🔬 Optimize", use_container_width=True, help="Automatically test many parameter combinations to find the best CAGR"):
+        if st.button("🔍 Finder", use_container_width=True, help="Automatically test many parameter combinations to find the best strategy"):
             st.session_state['page'] = 'optimizer'
             st.rerun()
     
