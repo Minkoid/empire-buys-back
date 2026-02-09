@@ -749,11 +749,310 @@ def show_roadmap():
     """, unsafe_allow_html=True)
 
 
+def show_optimizer():
+    """Display the optimizer page for grid search parameter optimization."""
+    import itertools
+    
+    # Back button
+    if st.button("← Back to Backtester"):
+        st.session_state['page'] = 'backtest'
+        st.rerun()
+    
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔬</div>
+        <h1 class="app-title">Strategy Optimizer</h1>
+        <p class="app-subtitle">Automatically find the best parameters for maximum CAGR</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Explanation
+    with st.expander("ℹ️ How the Optimizer Works", expanded=False):
+        st.markdown("""
+        **Grid Search** tests every combination of parameters within the ranges you specify.
+        
+        1. **Set your ranges** - Define min/max values and step sizes for each parameter
+        2. **Click Optimize** - The system tests all combinations automatically
+        3. **View results** - See a ranked table of all strategies sorted by CAGR
+        4. **Download CSV** - Export results for further analysis
+        
+        **Example:** Testing 5 pullback values × 4 stop-loss values × 3 exit modes = 60 combinations
+        """)
+    
+    st.markdown("")
+    
+    # Settings row
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown('<div class="control-card"><div class="control-card-header">🎯 Asset & Data</div>', unsafe_allow_html=True)
+        
+        opt_ticker = st.selectbox(
+            "Select Asset",
+            options=list(AVAILABLE_TICKERS.keys()),
+            format_func=lambda x: f"{x} - {AVAILABLE_TICKERS[x]}",
+            index=0,
+            key="opt_ticker",
+            help="The stock/ETF to test all parameter combinations on"
+        )
+        
+        date_col1, date_col2 = st.columns(2)
+        with date_col1:
+            opt_start_year = st.selectbox("Start Year", list(range(2000, 2027)), index=10, key="opt_start_year",
+                                          help="Year to start the backtest from")
+        with date_col2:
+            opt_start_month = st.selectbox("Start Month", list(range(1, 13)), index=0, key="opt_start_month",
+                                           format_func=lambda x: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][x-1],
+                                           help="Month to start the backtest from")
+        
+        opt_capital = st.number_input("Initial Capital ($)", 1000, 10000000, 10000, 1000, key="opt_capital",
+                                      help="Starting capital for each backtest simulation")
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div class="control-card"><div class="control-card-header">⚙️ Optimization Settings</div>', unsafe_allow_html=True)
+        
+        exit_modes_to_test = st.multiselect(
+            "Exit Modes to Test",
+            options=["ATH Recovery", "Percent Rebound"],
+            default=["ATH Recovery", "Percent Rebound"],
+            key="opt_exit_modes",
+            help="Which exit strategies to include in the optimization"
+        )
+        
+        use_trend_options = st.multiselect(
+            "Trend Filter",
+            options=["Off", "On"],
+            default=["Off"],
+            key="opt_trend",
+            help="Whether to test with trend filter on, off, or both"
+        )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # Parameter ranges
+    st.markdown('<div class="section-header">📊 Parameter Ranges</div>', unsafe_allow_html=True)
+    st.caption("Define the min, max, and step for each parameter to test")
+    
+    range_col1, range_col2, range_col3 = st.columns(3)
+    
+    with range_col1:
+        st.markdown("**Pullback % (Entry)**")
+        st.caption("How far price drops from ATH before buying")
+        pb_min = st.number_input("Min %", 1.0, 30.0, 3.0, 0.5, key="pb_min", help="Minimum pullback percentage to test")
+        pb_max = st.number_input("Max %", 1.0, 30.0, 10.0, 0.5, key="pb_max", help="Maximum pullback percentage to test")
+        pb_step = st.number_input("Step", 0.5, 5.0, 1.0, 0.5, key="pb_step", help="Increment between test values")
+    
+    with range_col2:
+        st.markdown("**Rebound % (Exit)**")
+        st.caption("Profit target before selling")
+        rb_min = st.number_input("Min %", 1.0, 30.0, 3.0, 0.5, key="rb_min", help="Minimum rebound percentage to test")
+        rb_max = st.number_input("Max %", 1.0, 30.0, 10.0, 0.5, key="rb_max", help="Maximum rebound percentage to test")
+        rb_step = st.number_input("Step", 0.5, 5.0, 1.0, 0.5, key="rb_step", help="Increment between test values")
+    
+    with range_col3:
+        st.markdown("**Stop-Loss %**")
+        st.caption("Maximum loss before cutting position")
+        sl_min = st.number_input("Min %", 1.0, 50.0, 5.0, 0.5, key="sl_min", help="Minimum stop-loss percentage to test")
+        sl_max = st.number_input("Max %", 1.0, 50.0, 15.0, 0.5, key="sl_max", help="Maximum stop-loss percentage to test")
+        sl_step = st.number_input("Step", 0.5, 5.0, 2.5, 0.5, key="sl_step", help="Increment between test values")
+    
+    # Calculate combinations
+    def frange(start, stop, step):
+        vals = []
+        v = start
+        while v <= stop + 0.001:
+            vals.append(round(v, 2))
+            v += step
+        return vals
+    
+    pullback_vals = frange(pb_min, pb_max, pb_step)
+    rebound_vals = frange(rb_min, rb_max, rb_step)
+    stoploss_vals = frange(sl_min, sl_max, sl_step)
+    exit_modes_list = exit_modes_to_test if exit_modes_to_test else ["ATH Recovery"]
+    trend_list = [False if t == "Off" else True for t in use_trend_options] if use_trend_options else [False]
+    
+    total_combinations = len(pullback_vals) * len(rebound_vals) * len(stoploss_vals) * len(exit_modes_list) * len(trend_list)
+    
+    st.markdown("")
+    st.markdown(f"""
+    <div style="text-align: center; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border: 1px solid #3b82f6;">
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; color: #3b82f6; font-weight: 600;">{total_combinations}</span>
+        <span style="color: #94a3b8; margin-left: 0.5rem;">combinations to test</span>
+        <span style="color: #64748b; margin-left: 1rem; font-size: 0.85rem;">(~{max(1, total_combinations // 10)} seconds)</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # Run button
+    run_col1, run_col2, run_col3 = st.columns([1, 2, 1])
+    with run_col2:
+        optimize_button = st.button("🔬 Find Best Strategy", type="primary", use_container_width=True,
+                                    help="Run all parameter combinations and find the highest CAGR")
+    
+    # Results
+    if optimize_button:
+        if total_combinations > 2000:
+            st.warning(f"⚠️ {total_combinations} combinations may take a while. Consider reducing ranges.")
+        
+        # Load data once
+        with st.spinner(f"Loading {opt_ticker} data..."):
+            try:
+                df = get_ticker_data(opt_ticker, "download", f"{opt_start_year}-{opt_start_month:02d}-01")
+            except Exception as e:
+                st.error(f"Error loading data: {str(e)}")
+                return
+        
+        # Run grid search
+        results = []
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        # Build all combinations
+        all_combos = list(itertools.product(pullback_vals, rebound_vals, stoploss_vals, exit_modes_list, trend_list))
+        
+        for i, (pb, rb, sl, exit_mode_str, use_trend) in enumerate(all_combos):
+            # Update progress
+            progress = (i + 1) / len(all_combos)
+            progress_bar.progress(progress)
+            status_text.text(f"Testing {i+1}/{len(all_combos)}: Pullback {pb}%, Rebound {rb}%, Stop-Loss {sl}%")
+            
+            # Set exit mode
+            if exit_mode_str == "ATH Recovery":
+                exit_mode = ExitMode.ATH_RECOVERY
+            else:
+                exit_mode = ExitMode.PERCENT_REBOUND
+            
+            # Configure backtest
+            config = BacktestConfig(
+                use_ath_entry=True,
+                use_atr_entry=False,
+                pullback_pct=pb,
+                atr_entry_multiplier=1.5,
+                use_trend_filter=use_trend,
+                trend_ma_period=50,
+                trend_lookback=5,
+                exit_mode=exit_mode,
+                rebound_pct=rb,
+                atr_exit_multiplier=1.0,
+                ema_period=20,
+                atr_period=14,
+                stop_loss_pct=sl,
+                initial_capital=float(opt_capital),
+                cooloff_after_stop=False
+            )
+            
+            # Run backtest
+            try:
+                result = run_backtest(df, config)
+                results.append({
+                    'Pullback %': pb,
+                    'Rebound %': rb,
+                    'Stop-Loss %': sl,
+                    'Exit Mode': exit_mode_str,
+                    'Trend Filter': 'On' if use_trend else 'Off',
+                    'CAGR %': round(result.cagr, 2),
+                    'Total Return %': round(result.total_return_pct, 2),
+                    'Max Drawdown %': round(result.max_drawdown_pct, 2),
+                    'Win Rate %': round(result.win_rate, 2),
+                    'Total Trades': result.total_trades,
+                    'Profit Factor': round(result.profit_factor, 2) if result.profit_factor != float('inf') else 999.99
+                })
+            except Exception as e:
+                continue
+        
+        progress_bar.empty()
+        status_text.empty()
+        
+        if results:
+            # Sort by CAGR
+            results_df = pd.DataFrame(results)
+            results_df = results_df.sort_values('CAGR %', ascending=False).reset_index(drop=True)
+            results_df.index = results_df.index + 1  # 1-based ranking
+            
+            # Store in session state
+            st.session_state['optimization_results'] = results_df
+            st.session_state['optimization_ticker'] = opt_ticker
+    
+    # Display results if available
+    if 'optimization_results' in st.session_state:
+        results_df = st.session_state['optimization_results']
+        opt_ticker_result = st.session_state.get('optimization_ticker', 'Unknown')
+        
+        st.markdown("")
+        st.markdown(f'<div class="section-header">🏆 Results for {opt_ticker_result} ({len(results_df)} strategies tested)</div>', unsafe_allow_html=True)
+        
+        # Top 3 highlight
+        if len(results_df) >= 1:
+            top_col1, top_col2, top_col3 = st.columns(3)
+            
+            top = results_df.iloc[0]
+            with top_col1:
+                st.markdown(f"""
+                <div class="metric-card" style="border: 2px solid #ffd700;">
+                    <div style="color: #ffd700; font-size: 0.75rem; margin-bottom: 0.5rem;">🥇 BEST STRATEGY</div>
+                    <div class="metric-value positive">{top['CAGR %']}%</div>
+                    <div class="metric-label">CAGR</div>
+                    <div style="color: #94a3b8; font-size: 0.75rem; margin-top: 0.75rem;">
+                        Pullback: {top['Pullback %']}% | Rebound: {top['Rebound %']}% | Stop: {top['Stop-Loss %']}%
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            if len(results_df) >= 2:
+                second = results_df.iloc[1]
+                with top_col2:
+                    st.markdown(f"""
+                    <div class="metric-card" style="border: 1px solid #c0c0c0;">
+                        <div style="color: #c0c0c0; font-size: 0.75rem; margin-bottom: 0.5rem;">🥈 2ND BEST</div>
+                        <div class="metric-value positive">{second['CAGR %']}%</div>
+                        <div class="metric-label">CAGR</div>
+                        <div style="color: #94a3b8; font-size: 0.75rem; margin-top: 0.75rem;">
+                            Pullback: {second['Pullback %']}% | Rebound: {second['Rebound %']}% | Stop: {second['Stop-Loss %']}%
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            if len(results_df) >= 3:
+                third = results_df.iloc[2]
+                with top_col3:
+                    st.markdown(f"""
+                    <div class="metric-card" style="border: 1px solid #cd7f32;">
+                        <div style="color: #cd7f32; font-size: 0.75rem; margin-bottom: 0.5rem;">🥉 3RD BEST</div>
+                        <div class="metric-value positive">{third['CAGR %']}%</div>
+                        <div class="metric-label">CAGR</div>
+                        <div style="color: #94a3b8; font-size: 0.75rem; margin-top: 0.75rem;">
+                            Pullback: {third['Pullback %']}% | Rebound: {third['Rebound %']}% | Stop: {third['Stop-Loss %']}%
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+        
+        st.markdown("")
+        
+        # Full results table
+        st.markdown("**All Results (sorted by CAGR)**")
+        st.dataframe(results_df, use_container_width=True, height=400)
+        
+        # Download button
+        csv = results_df.to_csv(index=True)
+        st.download_button(
+            label="📥 Download Results (CSV)",
+            data=csv,
+            file_name=f"optimization_{opt_ticker_result}_{opt_start_year}.csv",
+            mime="text/csv",
+            help="Download all results as a CSV file for Excel analysis"
+        )
+
+
 def main():
     """Main application entry point."""
     
     # Header row with title, ticker selector, and run button
-    header_col1, header_col2, header_col3, header_col4 = st.columns([3, 2, 1, 1])
+    header_col1, header_col2, header_col3, header_col4, header_col5 = st.columns([3, 2, 1, 1, 1])
     
     with header_col1:
         st.markdown("""
@@ -769,14 +1068,21 @@ def main():
             options=list(AVAILABLE_TICKERS.keys()),
             format_func=lambda x: f"{x} - {AVAILABLE_TICKERS[x]}",
             index=0,
-            label_visibility="collapsed"
+            label_visibility="collapsed",
+            help="Select the stock or ETF to backtest your strategy on"
         )
     
     with header_col3:
-        run_button = st.button("🚀 Run", type="primary", use_container_width=True)
+        run_button = st.button("🚀 Run", type="primary", use_container_width=True, 
+                               help="Execute the backtest with current parameters and display results")
     
     with header_col4:
-        if st.button("📋 Roadmap", use_container_width=True):
+        if st.button("🔬 Optimize", use_container_width=True, help="Automatically test many parameter combinations to find the best CAGR"):
+            st.session_state['page'] = 'optimizer'
+            st.rerun()
+    
+    with header_col5:
+        if st.button("📋 Roadmap", use_container_width=True, help="View the planned future upgrades for S&S Analytics"):
             st.session_state['page'] = 'roadmap'
             st.rerun()
     
@@ -794,20 +1100,26 @@ def main():
     with ctrl_col1:
         st.markdown('<div class="control-card"><div class="control-card-header">📥 Entry</div>', unsafe_allow_html=True)
         
-        use_ath_entry = st.toggle("ATH Pullback", value=True, key="ath_entry")
+        use_ath_entry = st.toggle("ATH Pullback", value=True, key="ath_entry",
+                                  help="All-Time High Pullback: Buy when price drops X% from its highest ever price")
         if use_ath_entry:
-            pullback_pct = st.slider("% from ATH", 1.0, 30.0, pv['pullback'], 0.5, key="pullback")
+            pullback_pct = st.slider("% from ATH", 1.0, 30.0, pv['pullback'], 0.5, key="pullback",
+                                     help="How far the price must drop from its all-time high before triggering a buy signal")
         else:
             pullback_pct = 5.0
         
-        use_atr_entry = st.toggle("ATR Pullback", value=False, key="atr_entry")
+        use_atr_entry = st.toggle("ATR Pullback", value=False, key="atr_entry",
+                                  help="Average True Range Pullback: Buy when price drops X ATRs below the EMA (volatility-based entry)")
         if use_atr_entry:
-            atr_entry_multiplier = st.slider("× ATR", 0.1, 5.0, 1.5, 0.1, key="atr_mult")
+            atr_entry_multiplier = st.slider("× ATR", 0.1, 5.0, 1.5, 0.1, key="atr_mult",
+                                             help="How many ATRs below the EMA the price must drop before buying")
             col_a, col_b = st.columns(2)
             with col_a:
-                ema_period = st.selectbox("EMA", [10, 20, 50, 100, 150, 200], index=1, key="ema")
+                ema_period = st.selectbox("EMA", [10, 20, 50, 100, 150, 200], index=1, key="ema",
+                                          help="Exponential Moving Average period - the baseline for ATR calculations")
             with col_b:
-                atr_period = st.selectbox("ATR", [7, 10, 14, 20, 30], index=2, key="atr")
+                atr_period = st.selectbox("ATR", [7, 10, 14, 20, 30], index=2, key="atr",
+                                          help="Average True Range period - measures price volatility over X days")
         else:
             atr_entry_multiplier = 1.5
             ema_period = 20
@@ -824,7 +1136,8 @@ def main():
         
         exit_options = ["ATH Recovery", "Percent Rebound", "ATR Rebound"]
         exit_idx = exit_options.index(pv['exit']) if pv['exit'] in exit_options else 0
-        exit_option = st.radio("Mode", exit_options, index=exit_idx, key="exit_mode", label_visibility="collapsed")
+        exit_option = st.radio("Mode", exit_options, index=exit_idx, key="exit_mode", label_visibility="collapsed",
+                               help="ATH Recovery: Sell when price returns to its all-time high | Percent Rebound: Sell after X% profit | ATR Rebound: Sell after price rises X ATRs")
         
         if exit_option == "ATH Recovery":
             exit_mode = ExitMode.ATH_RECOVERY
@@ -832,11 +1145,13 @@ def main():
             atr_exit_multiplier = 1.0
         elif exit_option == "Percent Rebound":
             exit_mode = ExitMode.PERCENT_REBOUND
-            rebound_pct = st.slider("Rebound %", 1.0, 30.0, pv['rebound'], 0.5, key="rebound")
+            rebound_pct = st.slider("Rebound %", 1.0, 30.0, pv['rebound'], 0.5, key="rebound",
+                                    help="Take profit when position gains this percentage from entry price")
             atr_exit_multiplier = 1.0
         else:
             exit_mode = ExitMode.ATR_REBOUND
-            atr_exit_multiplier = st.slider("× ATR", 0.1, 5.0, 1.0, 0.1, key="atr_exit")
+            atr_exit_multiplier = st.slider("× ATR", 0.1, 5.0, 1.0, 0.1, key="atr_exit",
+                                            help="Take profit when price rises this many ATRs from entry price")
             rebound_pct = 5.0
         
         st.markdown('</div>', unsafe_allow_html=True)
@@ -845,11 +1160,14 @@ def main():
     with ctrl_col3:
         st.markdown('<div class="control-card"><div class="control-card-header">🛡️ Risk</div>', unsafe_allow_html=True)
         
-        stop_loss_pct = st.slider("Stop-Loss %", 1.0, 50.0, pv['stop_loss'], 0.5, key="stop_loss")
-        cooloff = st.toggle("Cool-off after stop", value=False, key="cooloff")
+        stop_loss_pct = st.slider("Stop-Loss %", 1.0, 50.0, pv['stop_loss'], 0.5, key="stop_loss",
+                                  help="Exit the position if it drops this percentage below your entry price to limit losses")
+        cooloff = st.toggle("Cool-off after stop", value=False, key="cooloff",
+                           help="After a stop-loss is triggered, wait for price to make a new all-time high before entering again")
         
         st.markdown("")
-        initial_capital = st.number_input("Capital $", 1000, 10000000, 10000, 1000, key="capital")
+        initial_capital = st.number_input("Capital $", 1000, 10000000, 10000, 1000, key="capital",
+                                          help="Starting capital for the simulation - used to calculate returns and position sizes")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
@@ -857,27 +1175,33 @@ def main():
     with ctrl_col4:
         st.markdown('<div class="control-card"><div class="control-card-header">📊 Filters & Data</div>', unsafe_allow_html=True)
         
-        use_trend_filter = st.toggle("Trend Filter (MA rising)", value=pv['use_trend'], key="trend_filter")
+        use_trend_filter = st.toggle("Trend Filter (MA rising)", value=pv['use_trend'], key="trend_filter",
+                                     help="Only enter trades when the moving average is trending upwards - helps avoid buying during downtrends")
         if use_trend_filter:
             col_a, col_b = st.columns(2)
             with col_a:
-                trend_ma_period = st.selectbox("MA", [20, 50, 100, 150, 200], index=1, key="trend_ma")
+                trend_ma_period = st.selectbox("MA", [20, 50, 100, 150, 200], index=1, key="trend_ma",
+                                               help="Moving Average period to use for trend detection")
             with col_b:
-                trend_lookback = st.number_input("Days", 1, 20, 5, key="trend_lookback")
+                trend_lookback = st.number_input("Days", 1, 20, 5, key="trend_lookback",
+                                                 help="Compare current MA to X days ago - if higher, trend is rising")
         else:
             trend_ma_period = 50
             trend_lookback = 5
         
         st.markdown("")
-        data_source = st.radio("Data", ["Yahoo Finance", "Sample"], index=0, key="data_src", horizontal=True)
+        data_source = st.radio("Data", ["Yahoo Finance", "Sample"], index=0, key="data_src", horizontal=True,
+                               help="Yahoo Finance downloads real historical data | Sample uses pre-loaded test data")
         
         if data_source == "Yahoo Finance":
             date_col1, date_col2 = st.columns(2)
             with date_col1:
-                start_year = st.selectbox("Year", list(range(2000, 2027)), index=10, key="start_year")
+                start_year = st.selectbox("Year", list(range(2000, 2027)), index=10, key="start_year",
+                                          help="Start year for historical data")
             with date_col2:
                 start_month = st.selectbox("Month", list(range(1, 13)), index=0, key="start_month", 
-                                           format_func=lambda x: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][x-1])
+                                           format_func=lambda x: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][x-1],
+                                           help="Start month for historical data")
         else:
             start_year = 2010
             start_month = 1
@@ -1125,7 +1449,10 @@ def main():
 
 if __name__ == "__main__":
     # Page routing
-    if st.session_state.get('page', 'backtest') == 'roadmap':
+    current_page = st.session_state.get('page', 'backtest')
+    if current_page == 'roadmap':
         show_roadmap()
+    elif current_page == 'optimizer':
+        show_optimizer()
     else:
         main()
