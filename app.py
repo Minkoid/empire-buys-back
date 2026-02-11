@@ -1053,18 +1053,8 @@ def show_signals():
     ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([2, 1, 1])
     
     with ctrl_col1:
-        st.markdown("**Check Schedule**")
-        check_mode = st.radio(
-            "Mode",
-            options=["Manual (Click to check)", "Show scheduled time"],
-            index=0,
-            horizontal=True,
-            label_visibility="collapsed",
-            help="Manual: click button to check prices. Scheduled: set a daily check time (requires backend - future feature)"
-        )
-        
-        if "scheduled" in check_mode.lower():
-            st.info("⏰ Scheduled checks require the database upgrade. For now, use Manual mode and check at your preferred time.")
+        st.markdown("**Check Prices**")
+        st.markdown("<span style='color: #cbd5e1; font-size: 0.85rem;'>Click 'Check Now' to fetch live prices and generate signals. Configure scheduled checks below.</span>", unsafe_allow_html=True)
     
     with ctrl_col2:
         st.markdown("**Actions**")
