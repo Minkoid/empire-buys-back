@@ -146,19 +146,28 @@ st.markdown("""
     
     /* Make all text white/light for better readability */
     .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown td, .stMarkdown th,
-    .stMarkdown blockquote, .stMarkdown code, .stText {
+    .stMarkdown blockquote, .stMarkdown blockquote p, .stMarkdown code, .stText,
+    .stMarkdown ul, .stMarkdown ol, .stMarkdown span, .element-container p,
+    [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li, [data-testid="stMarkdownContainer"] blockquote {
         color: #f1f5f9 !important;
     }
     
-    .stMarkdown strong, .stMarkdown b {
+    .stMarkdown strong, .stMarkdown b, 
+    [data-testid="stMarkdownContainer"] strong, [data-testid="stMarkdownContainer"] b {
         color: #ffffff !important;
     }
     
-    .stMarkdown blockquote {
+    .stMarkdown blockquote, [data-testid="stMarkdownContainer"] blockquote {
         border-left: 3px solid #3b82f6;
         padding-left: 1rem;
         background: rgba(59, 130, 246, 0.1);
         border-radius: 0 8px 8px 0;
+        color: #f1f5f9 !important;
+    }
+    
+    .stMarkdown blockquote *, [data-testid="stMarkdownContainer"] blockquote * {
+        color: #f1f5f9 !important;
     }
     
     .stMarkdown table {
