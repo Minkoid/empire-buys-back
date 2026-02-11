@@ -144,43 +144,33 @@ st.markdown("""
         text-shadow: 1px 1px 0px #3b82f6;
     }
     
-    /* Make all text white/light for better readability */
-    .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown td, .stMarkdown th,
-    .stMarkdown blockquote, .stMarkdown blockquote p, .stMarkdown code, .stText,
-    .stMarkdown ul, .stMarkdown ol, .stMarkdown span, .element-container p,
-    [data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] p,
-    [data-testid="stMarkdownContainer"] li, [data-testid="stMarkdownContainer"] blockquote {
+    /* Make ALL text white/light for better readability */
+    p, li, td, th, blockquote, span, div, ul, ol {
         color: #f1f5f9 !important;
     }
     
-    .stMarkdown strong, .stMarkdown b, 
-    [data-testid="stMarkdownContainer"] strong, [data-testid="stMarkdownContainer"] b {
+    strong, b {
         color: #ffffff !important;
     }
     
-    .stMarkdown blockquote, [data-testid="stMarkdownContainer"] blockquote {
-        border-left: 3px solid #3b82f6;
-        padding-left: 1rem;
-        background: rgba(59, 130, 246, 0.1);
-        border-radius: 0 8px 8px 0;
-        color: #f1f5f9 !important;
+    blockquote {
+        border-left: 3px solid #3b82f6 !important;
+        padding-left: 1rem !important;
+        background: rgba(59, 130, 246, 0.1) !important;
+        border-radius: 0 8px 8px 0 !important;
     }
     
-    .stMarkdown blockquote *, [data-testid="stMarkdownContainer"] blockquote * {
-        color: #f1f5f9 !important;
-    }
-    
-    .stMarkdown table {
+    table {
         background: rgba(35, 42, 51, 0.5);
         border-radius: 8px;
     }
     
-    .stMarkdown th {
+    th {
         background: rgba(59, 130, 246, 0.2);
         font-weight: 600;
     }
     
-    .stMarkdown td, .stMarkdown th {
+    td, th {
         border-color: #334155 !important;
     }
     
