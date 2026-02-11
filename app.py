@@ -145,12 +145,22 @@ st.markdown("""
     }
     
     /* Make ALL text white/light for better readability */
-    p, li, td, th, blockquote, span, div, ul, ol {
+    p, li, td, th, blockquote, span, div, ul, ol, code, pre {
         color: #f1f5f9 !important;
     }
     
     strong, b {
         color: #ffffff !important;
+    }
+    
+    /* Inline code styling */
+    code {
+        color: #60a5fa !important;
+        background: rgba(59, 130, 246, 0.15) !important;
+        padding: 0.1rem 0.4rem !important;
+        border-radius: 4px !important;
+        font-family: 'JetBrains Mono', monospace !important;
+        font-size: 0.9em !important;
     }
     
     blockquote {
