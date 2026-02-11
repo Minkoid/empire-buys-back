@@ -1,4 +1,4 @@
-# AIModified:2026-01-30T10:00:00Z
+# AIModified:2026-01-30T12:00:00Z
 # S&S Analytics - Pullback Strategy Backtesting Tool - Dependencies
 
 streamlit>=1.28.0
@@ -7,5 +7,6 @@ numpy>=1.24.0
 plotly>=5.18.0
 yfinance>=0.2.30
 pytz>=2023.3
+supabase>=2.0.0
 
 

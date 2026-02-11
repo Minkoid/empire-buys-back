@@ -797,13 +797,44 @@ def show_signals():
     from datetime import datetime, timedelta
     import pytz
     
+    # Import database module
+    try:
+        from database import (
+            is_database_configured, is_logged_in, get_current_user,
+            sign_in, sign_up, sign_out, 
+            save_ticker_settings, load_ticker_settings,
+            save_check_schedule, load_check_schedule,
+            save_signal_check
+        )
+        db_available = is_database_configured()
+    except ImportError:
+        db_available = False
+        # Define stub functions to avoid errors
+        def is_logged_in(): return False
+        def get_current_user(): return None
+        def load_ticker_settings(uid): return None
+        def save_ticker_settings(uid, data): return False
+        def load_check_schedule(uid): return {"check_time": "20:30", "enabled": False}
+        def save_check_schedule(uid, time, enabled): return False
+    
     # Initialize session state for signals
     if 'signal_tickers' not in st.session_state:
-        # Default tickers with their settings
-        st.session_state['signal_tickers'] = {
-            'QQQ': {'pullback': 2.0, 'rebound': 4.0, 'stop_loss': 3.5, 'in_position': False, 'entry_price': None},
-            '^N225': {'pullback': 5.0, 'rebound': 6.0, 'stop_loss': 5.0, 'in_position': False, 'entry_price': None},
-        }
+        # Try to load from database if logged in
+        if db_available and is_logged_in():
+            user = get_current_user()
+            saved_settings = load_ticker_settings(user.id)
+            if saved_settings:
+                st.session_state['signal_tickers'] = saved_settings
+            else:
+                st.session_state['signal_tickers'] = {
+                    'QQQ': {'pullback': 2.0, 'rebound': 4.0, 'stop_loss': 3.5, 'in_position': False, 'entry_price': None},
+                    '^N225': {'pullback': 5.0, 'rebound': 6.0, 'stop_loss': 5.0, 'in_position': False, 'entry_price': None},
+                }
+        else:
+            st.session_state['signal_tickers'] = {
+                'QQQ': {'pullback': 2.0, 'rebound': 4.0, 'stop_loss': 3.5, 'in_position': False, 'entry_price': None},
+                '^N225': {'pullback': 5.0, 'rebound': 6.0, 'stop_loss': 5.0, 'in_position': False, 'entry_price': None},
+            }
     
     if 'last_check_time' not in st.session_state:
         st.session_state['last_check_time'] = None
@@ -811,10 +842,28 @@ def show_signals():
     if 'signal_results' not in st.session_state:
         st.session_state['signal_results'] = {}
     
-    # Back button
-    if st.button("← Back to Backtester"):
-        st.session_state['page'] = 'backtest'
-        st.rerun()
+    # Back button and header row
+    header_col1, header_col2 = st.columns([1, 3])
+    
+    with header_col1:
+        if st.button("← Back to Backtester"):
+            st.session_state['page'] = 'backtest'
+            st.rerun()
+    
+    with header_col2:
+        # Show login status if database is configured
+        if db_available:
+            if is_logged_in():
+                user = get_current_user()
+                user_col1, user_col2 = st.columns([3, 1])
+                with user_col1:
+                    st.markdown(f"<span style='color: #22c55e;'>✓ Logged in as {user.email}</span>", unsafe_allow_html=True)
+                with user_col2:
+                    if st.button("Logout", key="logout_btn"):
+                        sign_out()
+                        st.session_state.pop('user', None)
+                        st.session_state.pop('signal_tickers', None)
+                        st.rerun()
     
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
@@ -823,6 +872,62 @@ def show_signals():
         <p class="app-subtitle">Monitor your tickers and get buy/sell signals</p>
     </div>
     """, unsafe_allow_html=True)
+    
+    # Login/Register section if database configured but not logged in
+    if db_available and not is_logged_in():
+        st.markdown('<div class="section-header">🔐 Login to Save Your Settings</div>', unsafe_allow_html=True)
+        
+        st.info("Login or register to save your ticker settings and check history across sessions.")
+        
+        auth_tab1, auth_tab2 = st.tabs(["Login", "Register"])
+        
+        with auth_tab1:
+            with st.form("login_form"):
+                login_email = st.text_input("Email", key="login_email")
+                login_password = st.text_input("Password", type="password", key="login_pass")
+                login_submit = st.form_submit_button("Login", type="primary")
+                
+                if login_submit:
+                    if login_email and login_password:
+                        result = sign_in(login_email, login_password)
+                        if result["success"]:
+                            st.session_state['user'] = result["user"]
+                            # Load saved settings
+                            saved = load_ticker_settings(result["user"].id)
+                            if saved:
+                                st.session_state['signal_tickers'] = saved
+                            st.success("Logged in successfully!")
+                            st.rerun()
+                        else:
+                            st.error(result["error"])
+                    else:
+                        st.warning("Please enter email and password")
+        
+        with auth_tab2:
+            with st.form("register_form"):
+                reg_email = st.text_input("Email", key="reg_email")
+                reg_password = st.text_input("Password", type="password", key="reg_pass")
+                reg_password2 = st.text_input("Confirm Password", type="password", key="reg_pass2")
+                reg_submit = st.form_submit_button("Register", type="primary")
+                
+                if reg_submit:
+                    if reg_email and reg_password:
+                        if reg_password != reg_password2:
+                            st.error("Passwords do not match")
+                        elif len(reg_password) < 6:
+                            st.error("Password must be at least 6 characters")
+                        else:
+                            result = sign_up(reg_email, reg_password)
+                            if result["success"]:
+                                st.success("Registration successful! Please check your email to confirm, then login.")
+                            else:
+                                st.error(result["error"])
+                    else:
+                        st.warning("Please fill in all fields")
+        
+        st.markdown("---")
+        st.markdown("<p style='text-align: center; color: #cbd5e1;'>Or continue without an account (settings won't be saved)</p>", unsafe_allow_html=True)
+        st.markdown("")
     
     # Daily Instructions Summary Box
     if st.session_state['signal_results']:
@@ -1090,12 +1195,60 @@ def show_signals():
                 
                 st.markdown("---")
     
+    # Save Settings Button (if logged in)
+    if db_available and is_logged_in():
+        st.markdown("")
+        save_col1, save_col2, save_col3 = st.columns([1, 1, 1])
+        with save_col2:
+            if st.button("💾 Save Settings to Account", type="primary", use_container_width=True):
+                user = get_current_user()
+                if save_ticker_settings(user.id, st.session_state['signal_tickers']):
+                    st.success("Settings saved successfully!")
+                else:
+                    st.error("Failed to save settings")
+    
+    # Scheduled Check Configuration (if logged in)
+    if db_available and is_logged_in():
+        st.markdown("")
+        st.markdown('<div class="section-header">⏰ Scheduled Checks</div>', unsafe_allow_html=True)
+        
+        user = get_current_user()
+        schedule = load_check_schedule(user.id)
+        
+        sched_col1, sched_col2, sched_col3 = st.columns([1, 1, 1])
+        
+        with sched_col1:
+            schedule_enabled = st.toggle("Enable daily checks", value=schedule.get('enabled', False),
+                                         help="When enabled, the system will check prices at your scheduled time")
+        
+        with sched_col2:
+            check_time = st.time_input("Check time (UK)", 
+                                       value=datetime.strptime(schedule.get('check_time', '20:30'), '%H:%M').time(),
+                                       help="Time to check prices daily (UK timezone)")
+        
+        with sched_col3:
+            if st.button("💾 Save Schedule"):
+                time_str = check_time.strftime('%H:%M')
+                if save_check_schedule(user.id, time_str, schedule_enabled):
+                    st.success(f"Schedule saved: {'Enabled' if schedule_enabled else 'Disabled'} at {time_str} UK time")
+                else:
+                    st.error("Failed to save schedule")
+        
+        if schedule_enabled:
+            st.info(f"📅 Scheduled checks are enabled for {schedule.get('check_time', '20:30')} UK time daily. (Note: Automated execution requires server-side scheduling - coming in Phase 3)")
+    
     # Footer
-    st.markdown("""
+    if db_available and is_logged_in():
+        footer_msg = "💡 Your settings are saved to your account. Click 'Save Settings' after making changes."
+    elif db_available:
+        footer_msg = "💡 Login above to save your settings across sessions."
+    else:
+        footer_msg = "💡 Settings are saved for this session only. Configure database to enable persistent storage."
+    
+    st.markdown(f"""
     <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155;">
         <p style="color: #cbd5e1; font-size: 0.8rem;">
-            💡 Tip: Check prices at a consistent time each day (e.g., after market close). 
-            Settings are saved for this session. Database storage coming soon!
+            {footer_msg}
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -1320,8 +1473,76 @@ def show_guide():
     
     - **Check at a consistent time** - e.g., after market close each day
     - **Use different parameters for different tickers** - volatile ones (TQQQ, SOXL) may need wider stops
-    - **Settings are saved for your session** - they'll reset if you close the browser (database storage coming soon)
+    - **Login to save settings** - your ticker configurations persist across sessions when logged in
     - **The signals are suggestions** - always do your own research before trading
+    """)
+    
+    st.markdown("")
+    
+    # Database Setup
+    st.markdown('<div class="section-header">🗄️ Database Setup (For Admins)</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    To enable persistent storage and user accounts, you need to set up Supabase:
+    
+    **Step 1: Create a Supabase Project**
+    1. Go to [supabase.com](https://supabase.com) and sign up
+    2. Create a new project (free tier is fine)
+    3. Note your **Project URL** and **anon public key** from Settings → API
+    
+    **Step 2: Create Database Tables**
+    
+    Run this SQL in Supabase SQL Editor:
+    """)
+    
+    st.code("""
+-- User Settings Table
+CREATE TABLE IF NOT EXISTS user_settings (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+    ticker_settings JSONB,
+    check_time VARCHAR(5) DEFAULT '20:30',
+    schedule_enabled BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Signal History Table  
+CREATE TABLE IF NOT EXISTS signal_history (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    signals JSONB NOT NULL,
+    checked_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security
+ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE signal_history ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users can view own settings" ON user_settings FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own settings" ON user_settings FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update own settings" ON user_settings FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own history" ON signal_history FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own history" ON signal_history FOR INSERT WITH CHECK (auth.uid() = user_id);
+    """, language="sql")
+    
+    st.markdown("""
+    **Step 3: Configure Streamlit Secrets**
+    
+    In Streamlit Cloud, go to your app settings and add these secrets:
+    """)
+    
+    st.code("""
+SUPABASE_URL = "https://your-project.supabase.co"
+SUPABASE_KEY = "your-anon-public-key"
+    """, language="toml")
+    
+    st.markdown("""
+    **Step 4: Redeploy**
+    
+    After adding secrets, reboot your app from the Streamlit Cloud dashboard.
+    The Signal Dashboard will now show login/register options!
     """)
     
     st.markdown("")
