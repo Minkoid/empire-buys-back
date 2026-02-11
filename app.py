@@ -751,6 +751,316 @@ def show_roadmap():
     """, unsafe_allow_html=True)
 
 
+def show_signals():
+    """Display the Signal Dashboard for monitoring multiple tickers."""
+    import yfinance as yf
+    from datetime import datetime, timedelta
+    import pytz
+    
+    # Initialize session state for signals
+    if 'signal_tickers' not in st.session_state:
+        # Default tickers with their settings
+        st.session_state['signal_tickers'] = {
+            'QQQ': {'pullback': 2.0, 'rebound': 4.0, 'stop_loss': 3.5, 'in_position': False, 'entry_price': None},
+            '^N225': {'pullback': 5.0, 'rebound': 6.0, 'stop_loss': 5.0, 'in_position': False, 'entry_price': None},
+        }
+    
+    if 'last_check_time' not in st.session_state:
+        st.session_state['last_check_time'] = None
+    
+    if 'signal_results' not in st.session_state:
+        st.session_state['signal_results'] = {}
+    
+    # Back button
+    if st.button("← Back to Backtester"):
+        st.session_state['page'] = 'backtest'
+        st.rerun()
+    
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📡</div>
+        <h1 class="app-title">Signal Dashboard</h1>
+        <p class="app-subtitle">Monitor your tickers and get buy/sell signals</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Daily Instructions Summary Box
+    if st.session_state['signal_results']:
+        st.markdown('<div class="section-header">📋 Current Signals</div>', unsafe_allow_html=True)
+        
+        summary_items = []
+        for ticker, result in st.session_state['signal_results'].items():
+            signal = result.get('signal', 'UNKNOWN')
+            if signal == 'BUY':
+                summary_items.append(f"🟢 **{ticker}**: BUY SIGNAL - Price {result.get('price', 'N/A')} ({result.get('pullback_pct', 0):.1f}% below ATH)")
+            elif signal == 'SELL':
+                summary_items.append(f"🔴 **{ticker}**: SELL SIGNAL - Target reached")
+            elif signal == 'STOP':
+                summary_items.append(f"🔴 **{ticker}**: STOP-LOSS - Exit position")
+            elif signal == 'WATCHING':
+                summary_items.append(f"🟡 **{ticker}**: WATCHING - {result.get('pullback_pct', 0):.1f}% below ATH (need {st.session_state['signal_tickers'][ticker]['pullback']:.1f}%)")
+            else:
+                summary_items.append(f"⚪ **{ticker}**: HOLD - No action needed")
+        
+        last_check = st.session_state.get('last_check_time', 'Never')
+        if last_check and last_check != 'Never':
+            last_check_str = last_check.strftime("%Y-%m-%d %H:%M:%S %Z")
+        else:
+            last_check_str = "Never"
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border: 1px solid #334155; 
+                    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="color: #64748b; font-size: 0.8rem; margin-bottom: 1rem;">Last checked: {last_check_str}</div>
+            {'<br>'.join(summary_items) if summary_items else 'No signals yet - click Check Now'}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # Control Row
+    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([2, 1, 1])
+    
+    with ctrl_col1:
+        st.markdown("**Check Schedule**")
+        check_mode = st.radio(
+            "Mode",
+            options=["Manual (Click to check)", "Show scheduled time"],
+            index=0,
+            horizontal=True,
+            label_visibility="collapsed",
+            help="Manual: click button to check prices. Scheduled: set a daily check time (requires backend - future feature)"
+        )
+        
+        if "scheduled" in check_mode.lower():
+            st.info("⏰ Scheduled checks require the database upgrade. For now, use Manual mode and check at your preferred time.")
+    
+    with ctrl_col2:
+        st.markdown("**Actions**")
+        check_now = st.button("🔄 Check Now", type="primary", use_container_width=True,
+                              help="Fetch current prices and calculate signals for all tickers")
+    
+    with ctrl_col3:
+        st.markdown("**Add Ticker**")
+        if st.button("➕ Add Ticker", use_container_width=True):
+            st.session_state['show_add_ticker'] = True
+    
+    # Add Ticker Form
+    if st.session_state.get('show_add_ticker', False):
+        st.markdown("")
+        st.markdown('<div class="section-header">➕ Add New Ticker</div>', unsafe_allow_html=True)
+        
+        add_col1, add_col2, add_col3, add_col4, add_col5 = st.columns([2, 1, 1, 1, 1])
+        
+        with add_col1:
+            # Filter out already added tickers
+            available = [t for t in AVAILABLE_TICKERS.keys() if t not in st.session_state['signal_tickers']]
+            if available:
+                new_ticker = st.selectbox("Ticker", options=available, 
+                                          format_func=lambda x: f"{x} - {AVAILABLE_TICKERS[x]}")
+            else:
+                st.warning("All tickers already added")
+                new_ticker = None
+        
+        with add_col2:
+            new_pullback = st.number_input("Pullback %", 1.0, 30.0, 5.0, 0.5, key="new_pb")
+        
+        with add_col3:
+            new_rebound = st.number_input("Rebound %", 1.0, 30.0, 5.0, 0.5, key="new_rb")
+        
+        with add_col4:
+            new_stop = st.number_input("Stop-Loss %", 1.0, 30.0, 5.0, 0.5, key="new_sl")
+        
+        with add_col5:
+            st.markdown("")
+            st.markdown("")
+            if st.button("✅ Add", use_container_width=True) and new_ticker:
+                st.session_state['signal_tickers'][new_ticker] = {
+                    'pullback': new_pullback,
+                    'rebound': new_rebound,
+                    'stop_loss': new_stop,
+                    'in_position': False,
+                    'entry_price': None
+                }
+                st.session_state['show_add_ticker'] = False
+                st.rerun()
+        
+        if st.button("Cancel"):
+            st.session_state['show_add_ticker'] = False
+            st.rerun()
+    
+    st.markdown("")
+    
+    # Check prices if requested
+    if check_now:
+        with st.spinner("Fetching latest prices..."):
+            uk_tz = pytz.timezone('Europe/London')
+            st.session_state['last_check_time'] = datetime.now(uk_tz)
+            
+            for ticker, settings in st.session_state['signal_tickers'].items():
+                try:
+                    # Fetch recent data to calculate ATH and current price
+                    stock = yf.Ticker(ticker)
+                    hist = stock.history(period="2y")  # 2 years to find ATH
+                    
+                    if len(hist) > 0:
+                        current_price = hist['Close'].iloc[-1]
+                        ath = hist['Close'].max()
+                        pullback_pct = (ath - current_price) / ath * 100
+                        
+                        # Determine signal
+                        signal = 'HOLD'
+                        
+                        if settings['in_position']:
+                            # Check exit conditions
+                            entry = settings['entry_price']
+                            if entry:
+                                pnl_pct = (current_price - entry) / entry * 100
+                                if pnl_pct >= settings['rebound']:
+                                    signal = 'SELL'
+                                elif pnl_pct <= -settings['stop_loss']:
+                                    signal = 'STOP'
+                                else:
+                                    signal = 'IN_POSITION'
+                        else:
+                            # Check entry condition
+                            if pullback_pct >= settings['pullback']:
+                                signal = 'BUY'
+                            elif pullback_pct >= settings['pullback'] * 0.7:  # Within 70% of trigger
+                                signal = 'WATCHING'
+                        
+                        st.session_state['signal_results'][ticker] = {
+                            'price': current_price,
+                            'ath': ath,
+                            'pullback_pct': pullback_pct,
+                            'signal': signal,
+                            'last_update': datetime.now(uk_tz)
+                        }
+                except Exception as e:
+                    st.session_state['signal_results'][ticker] = {
+                        'error': str(e),
+                        'signal': 'ERROR'
+                    }
+        
+        st.rerun()
+    
+    # Ticker Cards
+    st.markdown('<div class="section-header">📊 Your Tickers</div>', unsafe_allow_html=True)
+    
+    if not st.session_state['signal_tickers']:
+        st.info("No tickers configured. Click 'Add Ticker' to get started.")
+    else:
+        for ticker, settings in st.session_state['signal_tickers'].items():
+            result = st.session_state['signal_results'].get(ticker, {})
+            signal = result.get('signal', 'NOT_CHECKED')
+            
+            # Determine card border color based on signal
+            border_color = "#334155"  # default
+            if signal == 'BUY':
+                border_color = "#22c55e"
+            elif signal in ['SELL', 'STOP']:
+                border_color = "#ef4444"
+            elif signal == 'WATCHING':
+                border_color = "#f59e0b"
+            elif signal == 'IN_POSITION':
+                border_color = "#3b82f6"
+            
+            with st.container():
+                st.markdown(f"""
+                <div style="background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); 
+                            border: 2px solid {border_color}; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 1.25rem; font-weight: 600; color: #f8fafc;">{ticker}</span>
+                            <span style="color: #64748b; margin-left: 0.5rem;">{AVAILABLE_TICKERS.get(ticker, '')}</span>
+                        </div>
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: {'#22c55e' if signal == 'BUY' else '#ef4444' if signal in ['SELL', 'STOP'] else '#f59e0b' if signal == 'WATCHING' else '#94a3b8'};">
+                            {signal}
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Editable settings row
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([1.5, 1, 1, 1, 1.5, 1, 0.8])
+                
+                with col1:
+                    if result.get('price'):
+                        st.metric("Current Price", f"${result['price']:.2f}" if ticker != '^N225' else f"¥{result['price']:,.0f}")
+                    else:
+                        st.metric("Current Price", "Not checked")
+                
+                with col2:
+                    if result.get('ath'):
+                        st.metric("ATH", f"${result['ath']:.2f}" if ticker != '^N225' else f"¥{result['ath']:,.0f}")
+                    else:
+                        st.metric("ATH", "-")
+                
+                with col3:
+                    if result.get('pullback_pct') is not None:
+                        st.metric("From ATH", f"-{result['pullback_pct']:.1f}%")
+                    else:
+                        st.metric("From ATH", "-")
+                
+                with col4:
+                    new_pullback = st.number_input("Pullback %", 1.0, 30.0, settings['pullback'], 0.5, 
+                                                   key=f"pb_{ticker}", label_visibility="collapsed")
+                    if new_pullback != settings['pullback']:
+                        st.session_state['signal_tickers'][ticker]['pullback'] = new_pullback
+                
+                with col5:
+                    new_rebound = st.number_input("Rebound %", 1.0, 30.0, settings['rebound'], 0.5,
+                                                  key=f"rb_{ticker}", label_visibility="collapsed")
+                    if new_rebound != settings['rebound']:
+                        st.session_state['signal_tickers'][ticker]['rebound'] = new_rebound
+                
+                with col6:
+                    new_stop = st.number_input("Stop %", 1.0, 30.0, settings['stop_loss'], 0.5,
+                                               key=f"sl_{ticker}", label_visibility="collapsed")
+                    if new_stop != settings['stop_loss']:
+                        st.session_state['signal_tickers'][ticker]['stop_loss'] = new_stop
+                
+                with col7:
+                    if st.button("🗑️", key=f"del_{ticker}", help=f"Remove {ticker}"):
+                        del st.session_state['signal_tickers'][ticker]
+                        if ticker in st.session_state['signal_results']:
+                            del st.session_state['signal_results'][ticker]
+                        st.rerun()
+                
+                # Position tracking
+                pos_col1, pos_col2 = st.columns([1, 3])
+                with pos_col1:
+                    in_pos = st.checkbox("In Position", value=settings['in_position'], key=f"pos_{ticker}",
+                                        help="Check this if you've bought this ticker")
+                    if in_pos != settings['in_position']:
+                        st.session_state['signal_tickers'][ticker]['in_position'] = in_pos
+                        if in_pos and result.get('price'):
+                            st.session_state['signal_tickers'][ticker]['entry_price'] = result['price']
+                        elif not in_pos:
+                            st.session_state['signal_tickers'][ticker]['entry_price'] = None
+                
+                with pos_col2:
+                    if settings['in_position'] and settings['entry_price']:
+                        entry = settings['entry_price']
+                        if result.get('price'):
+                            pnl = (result['price'] - entry) / entry * 100
+                            target = entry * (1 + settings['rebound'] / 100)
+                            stop = entry * (1 - settings['stop_loss'] / 100)
+                            st.markdown(f"Entry: **${entry:.2f}** | P&L: **{pnl:+.1f}%** | Target: ${target:.2f} | Stop: ${stop:.2f}")
+                
+                st.markdown("---")
+    
+    # Footer
+    st.markdown("""
+    <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155;">
+        <p style="color: #64748b; font-size: 0.8rem;">
+            💡 Tip: Check prices at a consistent time each day (e.g., after market close). 
+            Settings are saved for this session. Database storage coming soon!
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def show_guide():
     """Display the documentation/guide page."""
     
@@ -1363,7 +1673,7 @@ def main():
     """Main application entry point."""
     
     # Header row with title, ticker selector, and run button
-    header_col1, header_col2, header_col3, header_col4, header_col5, header_col6 = st.columns([3, 1.5, 0.8, 0.8, 0.8, 0.8])
+    header_col1, header_col2, header_col3, header_col4, header_col5, header_col6, header_col7 = st.columns([2.5, 1.5, 0.8, 0.8, 0.8, 0.8, 0.8])
     
     with header_col1:
         st.markdown("""
@@ -1392,11 +1702,16 @@ def main():
             st.rerun()
     
     with header_col5:
+        if st.button("📡 Signals", use_container_width=True, help="Monitor your tickers and get live buy/sell signals"):
+            st.session_state['page'] = 'signals'
+            st.rerun()
+    
+    with header_col6:
         if st.button("📖 Guide", use_container_width=True, help="Learn how to use S&S Analytics and understand the key concepts"):
             st.session_state['page'] = 'guide'
             st.rerun()
     
-    with header_col6:
+    with header_col7:
         if st.button("📋 Plan", use_container_width=True, help="View the planned future upgrades for S&S Analytics"):
             st.session_state['page'] = 'roadmap'
             st.rerun()
@@ -1771,5 +2086,7 @@ if __name__ == "__main__":
         show_optimizer()
     elif current_page == 'guide':
         show_guide()
+    elif current_page == 'signals':
+        show_signals()
     else:
         main()
