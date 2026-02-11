@@ -68,7 +68,7 @@ st.markdown("""
         --accent-teal: #14b8a6;
         --accent-purple: #a855f7;
         --text-primary: #f8fafc;
-        --text-secondary: #94a3b8;
+        --text-secondary: #cbd5e1;
         --border-color: #334155;
     }
     
@@ -99,7 +99,7 @@ st.markdown("""
     .app-subtitle {
         font-family: 'Inter', sans-serif;
         font-size: 1rem;
-        color: #94a3b8;
+        color: #cbd5e1;
         font-weight: 400;
     }
     
@@ -122,7 +122,7 @@ st.markdown("""
     .metric-label {
         font-family: 'Press Start 2P', cursive;
         font-size: 0.5rem;
-        color: #94a3b8;
+        color: #cbd5e1;
         text-transform: uppercase;
         letter-spacing: 0.02em;
         font-weight: 400;
@@ -560,7 +560,7 @@ def show_roadmap():
         <div class="metric-card">
             <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
             <div class="metric-label">Strategy Backtesting</div>
-            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">Test on 25 years of data</div>
+            <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem;">Test on 25 years of data</div>
         </div>
         """, unsafe_allow_html=True)
     with col2:
@@ -568,7 +568,7 @@ def show_roadmap():
         <div class="metric-card">
             <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
             <div class="metric-label">Multiple Assets</div>
-            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">QQQ, SPY, Gold & more</div>
+            <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem;">QQQ, SPY, Gold & more</div>
         </div>
         """, unsafe_allow_html=True)
     with col3:
@@ -576,7 +576,7 @@ def show_roadmap():
         <div class="metric-card">
             <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
             <div class="metric-label">Quick Presets</div>
-            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">Conservative to Aggressive</div>
+            <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem;">Conservative to Aggressive</div>
         </div>
         """, unsafe_allow_html=True)
     with col4:
@@ -584,7 +584,7 @@ def show_roadmap():
         <div class="metric-card">
             <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">✅</div>
             <div class="metric-label">Visual Analytics</div>
-            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem;">Charts & trade markers</div>
+            <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.5rem;">Charts & trade markers</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -633,7 +633,7 @@ def show_roadmap():
             </div>
             <div>
                 <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #f8fafc;">{title}</h3>
-                <p style="color: #94a3b8; font-size: 0.95rem; margin: 0;">{desc}</p>
+                <p style="color: #cbd5e1; font-size: 0.95rem; margin: 0;">{desc}</p>
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -662,7 +662,7 @@ def show_roadmap():
             <div class="metric-card">
                 <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">{icon}</div>
                 <div class="metric-label">{title}</div>
-                <div style="color: #94a3b8; font-size: 0.8rem; margin-top: 0.5rem;">{desc}</div>
+                <div style="color: #cbd5e1; font-size: 0.8rem; margin-top: 0.5rem;">{desc}</div>
             </div>
             """, unsafe_allow_html=True)
     
@@ -689,7 +689,7 @@ def show_roadmap():
         <div style="text-align: center; padding: 1.5rem 2rem; background: rgba(34, 197, 94, 0.05); 
                     border: 1px solid #22c55e; border-radius: 10px;">
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: #22c55e;">£0</div>
-            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">Monthly Cost</div>
+            <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.25rem;">Monthly Cost</div>
         </div>
         """, unsafe_allow_html=True)
     with cost_col2:
@@ -697,7 +697,7 @@ def show_roadmap():
         <div style="text-align: center; padding: 1.5rem 2rem; background: rgba(34, 197, 94, 0.05); 
                     border: 1px solid #22c55e; border-radius: 10px;">
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: #22c55e;">£0</div>
-            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">Setup Cost</div>
+            <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.25rem;">Setup Cost</div>
         </div>
         """, unsafe_allow_html=True)
     with cost_col3:
@@ -705,7 +705,7 @@ def show_roadmap():
         <div style="text-align: center; padding: 1.5rem 2rem; background: rgba(34, 197, 94, 0.05); 
                     border: 1px solid #22c55e; border-radius: 10px;">
             <div style="font-family: 'JetBrains Mono', monospace; font-size: 2rem; font-weight: 700; color: #22c55e;">∞</div>
-            <div style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.25rem;">Paper Trades</div>
+            <div style="color: #cbd5e1; font-size: 0.85rem; margin-top: 0.25rem;">Paper Trades</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -724,7 +724,7 @@ def show_roadmap():
         st.markdown(f"""
         <div style="padding: 1rem; border-left: 3px solid #3b82f6; margin-bottom: 0.75rem; background: rgba(59, 130, 246, 0.03);">
             <h4 style="color: #f8fafc; margin: 0 0 0.25rem 0; font-size: 1rem;">{title}</h4>
-            <p style="color: #94a3b8; margin: 0; font-size: 0.9rem;">{desc}</p>
+            <p style="color: #cbd5e1; margin: 0; font-size: 0.9rem;">{desc}</p>
         </div>
         """, unsafe_allow_html=True)
     
@@ -735,7 +735,7 @@ def show_roadmap():
     <div style="text-align: center; padding: 2rem; background: linear-gradient(145deg, rgba(59, 130, 246, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%); 
                 border-radius: 12px; border: 1px solid #3b82f6; margin-top: 2rem;">
         <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.75rem; color: #3b82f6; margin-bottom: 1rem;">Ready to Upgrade?</h3>
-        <p style="color: #94a3b8; max-width: 600px; margin: 0 auto;">
+        <p style="color: #cbd5e1; max-width: 600px; margin: 0 auto;">
             The first step is to create a free Supabase account. Once that's done, 
             we can start building the multi-user system and paper trading features.
         </p>
@@ -746,7 +746,7 @@ def show_roadmap():
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
         <div style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">S&S Analytics</div>
-        <p style="color: #94a3b8; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
+        <p style="color: #cbd5e1; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -811,7 +811,7 @@ def show_signals():
         st.markdown(f"""
         <div style="background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border: 1px solid #334155; 
                     border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
-            <div style="color: #64748b; font-size: 0.8rem; margin-bottom: 1rem;">Last checked: {last_check_str}</div>
+            <div style="color: #cbd5e1; font-size: 0.8rem; margin-bottom: 1rem;">Last checked: {last_check_str}</div>
             {'<br>'.join(summary_items) if summary_items else 'No signals yet - click Check Now'}
         </div>
         """, unsafe_allow_html=True)
@@ -972,9 +972,9 @@ def show_signals():
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <span style="font-size: 1.25rem; font-weight: 600; color: #f8fafc;">{ticker}</span>
-                            <span style="color: #64748b; margin-left: 0.5rem;">{AVAILABLE_TICKERS.get(ticker, '')}</span>
+                            <span style="color: #cbd5e1; margin-left: 0.5rem;">{AVAILABLE_TICKERS.get(ticker, '')}</span>
                         </div>
-                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: {'#22c55e' if signal == 'BUY' else '#ef4444' if signal in ['SELL', 'STOP'] else '#f59e0b' if signal == 'WATCHING' else '#94a3b8'};">
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: {'#22c55e' if signal == 'BUY' else '#ef4444' if signal in ['SELL', 'STOP'] else '#f59e0b' if signal == 'WATCHING' else '#cbd5e1'};">
                             {signal}
                         </div>
                     </div>
@@ -1053,7 +1053,7 @@ def show_signals():
     # Footer
     st.markdown("""
     <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155;">
-        <p style="color: #64748b; font-size: 0.8rem;">
+        <p style="color: #cbd5e1; font-size: 0.8rem;">
             💡 Tip: Check prices at a consistent time each day (e.g., after market close). 
             Settings are saved for this session. Database storage coming soon!
         </p>
@@ -1230,6 +1230,62 @@ def show_guide():
     
     st.markdown("")
     
+    # How to use - Signal Dashboard
+    st.markdown('<div class="section-header">📡 How to Use: Signal Dashboard</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    The Signal Dashboard turns your backtested strategies into **live trading signals**:
+    
+    **Purpose:**
+    > Once you've found strategies that work using the Backtester and Strategy Finder, 
+    > the Signal Dashboard monitors real prices and tells you when to buy or sell.
+    
+    ---
+    
+    **Setting up your tickers:**
+    
+    1. **Click "Signals"** in the header to go to the Signal Dashboard
+    2. **Add tickers** - Click "Add Ticker" and choose from the available list
+    3. **Set parameters** - Each ticker can have different settings:
+       - **Pullback %**: How far below ATH to trigger a BUY signal
+       - **Rebound %**: How much gain to trigger a SELL signal
+       - **Stop-Loss %**: How much loss to trigger a STOP signal
+    4. **Click "Check Now"** - Fetches current prices and calculates signals
+    
+    ---
+    
+    **Understanding signals:**
+    
+    | Signal | Meaning | Action |
+    |--------|---------|--------|
+    | 🟢 **BUY** | Price dropped below your pullback threshold | Consider buying |
+    | 🟡 **WATCHING** | Price getting close to threshold (within 70%) | Stay alert |
+    | ⚪ **HOLD** | No action needed | Wait |
+    | 🔵 **IN_POSITION** | You've marked this as bought | Monitoring for exit |
+    | 🔴 **SELL** | Rebound target reached | Consider selling for profit |
+    | 🔴 **STOP** | Stop-loss triggered | Consider selling to limit loss |
+    
+    ---
+    
+    **Position tracking:**
+    
+    - Check **"In Position"** when you've actually bought the ticker
+    - The dashboard will remember your entry price (uses the price at time you checked the box)
+    - Shows your **P&L %**, **target price**, and **stop price**
+    - Signals change from entry-focused to exit-focused once you're in a position
+    
+    ---
+    
+    **Tips for the Signal Dashboard:**
+    
+    - **Check at a consistent time** - e.g., after market close each day
+    - **Use different parameters for different tickers** - volatile ones (TQQQ, SOXL) may need wider stops
+    - **Settings are saved for your session** - they'll reset if you close the browser (database storage coming soon)
+    - **The signals are suggestions** - always do your own research before trading
+    """)
+    
+    st.markdown("")
+    
     # Tips
     st.markdown('<div class="section-header">💡 Pro Tips</div>', unsafe_allow_html=True)
     
@@ -1271,7 +1327,7 @@ def show_guide():
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
         <div style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">S&S Analytics</div>
-        <p style="color: #94a3b8; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
+        <p style="color: #cbd5e1; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -1430,8 +1486,8 @@ def show_optimizer():
     st.markdown(f"""
     <div style="text-align: center; padding: 1rem; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border: 1px solid #3b82f6;">
         <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.5rem; color: #3b82f6; font-weight: 600;">{total_combinations}</span>
-        <span style="color: #94a3b8; margin-left: 0.5rem;">combinations to test</span>
-        <span style="color: #64748b; margin-left: 1rem; font-size: 0.85rem;">(~{max(1, total_combinations // 10)} seconds)</span>
+        <span style="color: #cbd5e1; margin-left: 0.5rem;">combinations to test</span>
+        <span style="color: #cbd5e1; margin-left: 1rem; font-size: 0.85rem;">(~{max(1, total_combinations // 10)} seconds)</span>
     </div>
     """, unsafe_allow_html=True)
     
@@ -1618,7 +1674,7 @@ def show_optimizer():
                     <div style="color: #ffd700; font-size: 0.75rem; margin-bottom: 0.5rem;">🥇 BEST STRATEGY</div>
                     <div class="metric-value positive">{top['CAGR %']}%</div>
                     <div class="metric-label">CAGR</div>
-                    <div style="color: #94a3b8; font-size: 0.75rem; margin-top: 0.75rem;">
+                    <div style="color: #cbd5e1; font-size: 0.75rem; margin-top: 0.75rem;">
                         Pullback: {top['Pullback %']}% | Rebound: {top['Rebound %']}% | Stop: {top['Stop-Loss %']}%
                     </div>
                 </div>
@@ -1632,7 +1688,7 @@ def show_optimizer():
                         <div style="color: #c0c0c0; font-size: 0.75rem; margin-bottom: 0.5rem;">🥈 2ND BEST</div>
                         <div class="metric-value positive">{second['CAGR %']}%</div>
                         <div class="metric-label">CAGR</div>
-                        <div style="color: #94a3b8; font-size: 0.75rem; margin-top: 0.75rem;">
+                        <div style="color: #cbd5e1; font-size: 0.75rem; margin-top: 0.75rem;">
                             Pullback: {second['Pullback %']}% | Rebound: {second['Rebound %']}% | Stop: {second['Stop-Loss %']}%
                         </div>
                     </div>
@@ -1646,7 +1702,7 @@ def show_optimizer():
                         <div style="color: #cd7f32; font-size: 0.75rem; margin-bottom: 0.5rem;">🥉 3RD BEST</div>
                         <div class="metric-value positive">{third['CAGR %']}%</div>
                         <div class="metric-label">CAGR</div>
-                        <div style="color: #94a3b8; font-size: 0.75rem; margin-top: 0.75rem;">
+                        <div style="color: #cbd5e1; font-size: 0.75rem; margin-top: 0.75rem;">
                             Pullback: {third['Pullback %']}% | Rebound: {third['Rebound %']}% | Stop: {third['Stop-Loss %']}%
                         </div>
                     </div>
@@ -2042,10 +2098,10 @@ def main():
         # Show instructions when no backtest has been run
         st.markdown("""
         <div style="text-align: center; padding: 3rem 2rem; background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border-radius: 12px; border: 1px solid #334155; margin: 1rem 0;">
-            <p style="color: #94a3b8; font-size: 1rem; max-width: 600px; margin: 0 auto; font-family: 'Inter', sans-serif;">
+            <p style="color: #cbd5e1; font-size: 1rem; max-width: 600px; margin: 0 auto; font-family: 'Inter', sans-serif;">
                 Configure your strategy using the controls above, then click <strong>🚀 Run</strong> to backtest.
             </p>
-            <p style="color: #64748b; font-size: 0.85rem; margin-top: 1rem; font-family: 'Inter', sans-serif;">
+            <p style="color: #cbd5e1; font-size: 0.85rem; margin-top: 1rem; font-family: 'Inter', sans-serif;">
                 💡 Try a preset to get started quickly, or customize each parameter.
             </p>
         </div>
