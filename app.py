@@ -144,6 +144,37 @@ st.markdown("""
         text-shadow: 1px 1px 0px #3b82f6;
     }
     
+    /* Make all text white/light for better readability */
+    .stMarkdown, .stMarkdown p, .stMarkdown li, .stMarkdown td, .stMarkdown th,
+    .stMarkdown blockquote, .stMarkdown code, .stText {
+        color: #f1f5f9 !important;
+    }
+    
+    .stMarkdown strong, .stMarkdown b {
+        color: #ffffff !important;
+    }
+    
+    .stMarkdown blockquote {
+        border-left: 3px solid #3b82f6;
+        padding-left: 1rem;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 0 8px 8px 0;
+    }
+    
+    .stMarkdown table {
+        background: rgba(35, 42, 51, 0.5);
+        border-radius: 8px;
+    }
+    
+    .stMarkdown th {
+        background: rgba(59, 130, 246, 0.2);
+        font-weight: 600;
+    }
+    
+    .stMarkdown td, .stMarkdown th {
+        border-color: #334155 !important;
+    }
+    
     /* Hide sidebar */
     [data-testid="stSidebar"] {
         display: none;
