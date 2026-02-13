@@ -340,6 +340,112 @@ st.markdown("""
         display: none;
     }
     
+    /* Force dark theme on ALL form elements - fixes light mode browser issues */
+    input, select, textarea, button, [data-baseweb="input"], [data-baseweb="select"],
+    [data-baseweb="textarea"], [data-baseweb="base-input"] {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+        border-color: #475569 !important;
+    }
+    
+    /* Streamlit specific form elements */
+    .stTextInput input, .stNumberInput input, .stSelectbox select,
+    .stTextArea textarea, .stDateInput input, .stTimeInput input {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+        border: 1px solid #475569 !important;
+        border-radius: 8px !important;
+    }
+    
+    .stTextInput input:focus, .stNumberInput input:focus, 
+    .stSelectbox select:focus, .stTextArea textarea:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+    }
+    
+    /* Dropdown/select menus */
+    [data-baseweb="popover"], [data-baseweb="menu"], [data-baseweb="select"] ul,
+    .stSelectbox [data-baseweb="popover"] {
+        background-color: #1e293b !important;
+        border: 1px solid #475569 !important;
+    }
+    
+    [data-baseweb="menu"] li, [data-baseweb="select"] li,
+    .stSelectbox [data-baseweb="menu"] li {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+    }
+    
+    [data-baseweb="menu"] li:hover, [data-baseweb="select"] li:hover {
+        background-color: #334155 !important;
+    }
+    
+    /* Buttons */
+    .stButton button {
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
+        border: 1px solid #475569 !important;
+    }
+    
+    .stButton button:hover {
+        background-color: #475569 !important;
+        border-color: #64748b !important;
+    }
+    
+    .stButton button[kind="primary"] {
+        background-color: #3b82f6 !important;
+        border-color: #3b82f6 !important;
+        color: #ffffff !important;
+    }
+    
+    .stButton button[kind="primary"]:hover {
+        background-color: #2563eb !important;
+    }
+    
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        background-color: transparent !important;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        background-color: #1e293b !important;
+        color: #94a3b8 !important;
+        border-radius: 8px 8px 0 0 !important;
+    }
+    
+    .stTabs [aria-selected="true"] {
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+    
+    /* Checkbox and toggle */
+    .stCheckbox label, .stToggle label {
+        color: #f1f5f9 !important;
+    }
+    
+    /* Radio buttons */
+    .stRadio label {
+        color: #f1f5f9 !important;
+    }
+    
+    /* Number input arrows */
+    .stNumberInput button {
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
+    }
+    
+    /* Labels */
+    .stTextInput label, .stNumberInput label, .stSelectbox label,
+    .stTextArea label, .stDateInput label, .stTimeInput label,
+    .stCheckbox label, .stRadio label, .stToggle label {
+        color: #cbd5e1 !important;
+    }
+    
+    /* Placeholder text */
+    input::placeholder, textarea::placeholder {
+        color: #64748b !important;
+    }
+    
     /* Control card styling */
     .control-card {
         background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%);
