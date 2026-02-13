@@ -369,6 +369,59 @@ st.markdown("""
         color: #f1f5f9 !important;
     }
     
+    /* BaseWeb select/dropdown - the white dropdowns in the screenshot */
+    [data-baseweb="select"] > div,
+    [data-baseweb="select"] > div > div,
+    [data-baseweb="select"] [class*="control"],
+    [data-baseweb="select"] [class*="value"],
+    [data-baseweb="select"] [class*="placeholder"],
+    [data-baseweb="select"] [class*="input"],
+    div[class*="stSelectbox"] > div > div,
+    div[class*="stSelectbox"] > div > div > div {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+        border-color: #475569 !important;
+    }
+    
+    /* BaseWeb input fields */
+    [data-baseweb="base-input"] > div,
+    [data-baseweb="input"] > div,
+    div[class*="stNumberInput"] > div > div > input,
+    div[class*="stTextInput"] > div > div > input {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+        border-color: #475569 !important;
+    }
+    
+    /* Dropdown menu when open */
+    [data-baseweb="popover"] > div,
+    [data-baseweb="menu"],
+    [data-baseweb="menu"] > div,
+    ul[role="listbox"],
+    ul[role="listbox"] > li {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
+    }
+    
+    ul[role="listbox"] > li:hover,
+    [data-baseweb="menu"] li:hover {
+        background-color: #334155 !important;
+    }
+    
+    /* The select arrow/icon */
+    [data-baseweb="select"] svg {
+        fill: #94a3b8 !important;
+        color: #94a3b8 !important;
+    }
+    
+    /* Number input +/- buttons */
+    [data-baseweb="input"] button,
+    div[class*="stNumberInput"] button {
+        background-color: #334155 !important;
+        color: #f1f5f9 !important;
+        border-color: #475569 !important;
+    }
+    
     /* Streamlit specific form elements */
     .stTextInput input, .stNumberInput input, .stSelectbox select,
     .stTextArea textarea, .stDateInput input, .stTimeInput input {
