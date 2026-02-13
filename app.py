@@ -340,12 +340,33 @@ st.markdown("""
         display: none;
     }
     
+    /* Force dark color scheme for the entire app */
+    :root {
+        color-scheme: dark !important;
+    }
+    
+    html, body, .stApp, [data-testid="stAppViewContainer"] {
+        color-scheme: dark !important;
+        background-color: #0f1419 !important;
+    }
+    
     /* Force dark theme on ALL form elements - fixes light mode browser issues */
+    *, *::before, *::after {
+        color-scheme: dark !important;
+    }
+    
     input, select, textarea, button, [data-baseweb="input"], [data-baseweb="select"],
     [data-baseweb="textarea"], [data-baseweb="base-input"] {
         background-color: #1e293b !important;
         color: #f1f5f9 !important;
         border-color: #475569 !important;
+    }
+    
+    /* Target Streamlit's internal elements aggressively */
+    [data-testid] input, [data-testid] select, [data-testid] textarea,
+    [class*="st"] input, [class*="st"] select, [class*="st"] textarea {
+        background-color: #1e293b !important;
+        color: #f1f5f9 !important;
     }
     
     /* Streamlit specific form elements */
