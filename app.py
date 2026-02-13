@@ -1563,6 +1563,12 @@ def show_changelog():
     # Version entries - newest first
     changelog_entries = [
         {
+            "version": "1.2.4",
+            "date": "2026-02-13",
+            "technical": "Added .streamlit/config.toml with base='dark' theme. This forces Streamlit's native dark theme at app level, overriding device/browser light mode settings.",
+            "user": "Fixed white-on-white display issues for users on iPad, Android, and some laptops. The app now forces dark mode at the system level, regardless of your device's light/dark mode setting."
+        },
+        {
             "version": "1.2.3",
             "date": "2026-02-13",
             "technical": "Fixed RLS policy error by setting auth session on Supabase client. Added error handling for signal fetch failures.",
