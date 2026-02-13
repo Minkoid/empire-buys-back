@@ -1204,7 +1204,17 @@ def show_signals():
             signal = result.get('signal', 'UNKNOWN')
             pullback = result.get('pullback_pct', 0)
             price = result.get('price', 0)
+            
+            # Handle ERROR signal
+            if signal == 'ERROR':
+                error_msg = result.get('error', 'Unknown error')
+                summary_items.append(f"❌ **{ticker}**: ERROR - {error_msg[:50]}")
+                continue
+            
             price_str = f"${price:.2f}" if ticker != '^N225' else f"¥{price:,.0f}"
+            
+            # Get ticker settings safely
+            ticker_settings = st.session_state.get('signal_tickers', {}).get(ticker, {})
             
             if signal == 'BUY':
                 summary_items.append(f"🟢 **{ticker}**: BUY SIGNAL - {price_str} ({pullback:.1f}% below ATH)")
@@ -1213,13 +1223,13 @@ def show_signals():
             elif signal == 'STOP':
                 summary_items.append(f"🔴 **{ticker}**: STOP-LOSS - Exit position")
             elif signal == 'WATCHING':
-                target_pullback = st.session_state['signal_tickers'][ticker]['pullback']
+                target_pullback = ticker_settings.get('pullback', 5.0)
                 summary_items.append(f"🟡 **{ticker}**: WATCHING - {pullback:.1f}% below ATH (need {target_pullback:.1f}%)")
             elif signal == 'AT_ATH':
                 summary_items.append(f"🔵 **{ticker}**: AT ALL-TIME HIGH - No pullback yet")
             elif signal == 'IN_POSITION':
-                entry = st.session_state['signal_tickers'][ticker].get('entry_price', 0)
-                if entry:
+                entry = ticker_settings.get('entry_price', 0)
+                if entry and price:
                     pnl = (price - entry) / entry * 100
                     summary_items.append(f"📊 **{ticker}**: IN POSITION - {price_str} ({pnl:+.1f}% P&L)")
                 else:

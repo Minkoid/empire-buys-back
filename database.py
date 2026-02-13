@@ -18,6 +18,7 @@ def get_supabase_client() -> Optional[Client]:
     """
     Get Supabase client using secrets from Streamlit.
     Returns None if not configured.
+    Sets the session if user is logged in for RLS to work.
     """
     try:
         url = st.secrets.get("SUPABASE_URL")
@@ -26,7 +27,17 @@ def get_supabase_client() -> Optional[Client]:
         if not url or not key:
             return None
         
-        return create_client(url, key)
+        client = create_client(url, key)
+        
+        # Set session if we have one stored (required for RLS policies)
+        session = st.session_state.get('session')
+        if session:
+            try:
+                client.auth.set_session(session.access_token, session.refresh_token)
+            except:
+                pass  # Session might be expired, will fail gracefully
+        
+        return client
     except Exception as e:
         st.warning(f"Database not configured: {e}")
         return None
