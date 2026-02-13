@@ -1544,13 +1544,95 @@ def show_signals():
     """, unsafe_allow_html=True)
 
 
+def show_changelog():
+    """Display the version changelog."""
+    
+    # Back button
+    if st.button("← Back to Guide"):
+        st.session_state['page'] = 'guide'
+        st.rerun()
+    
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📋</div>
+        <h1 class="app-title">Changelog</h1>
+        <p class="app-subtitle">Version history and updates</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Version entries - newest first
+    changelog_entries = [
+        {
+            "version": "1.2.3",
+            "date": "2026-02-13",
+            "technical": "Fixed RLS policy error by setting auth session on Supabase client. Added error handling for signal fetch failures.",
+            "user": "Fixed 'Failed to save settings' error. Now when you save your ticker settings, they properly save to your account. Also fixed an issue where the first price check could show an error."
+        },
+        {
+            "version": "1.2.2", 
+            "date": "2026-02-13",
+            "technical": "Updated Signal Dashboard to use cummax() rolling ATH calculation matching backtest engine. Added AT_ATH signal state.",
+            "user": "Signal Dashboard now uses the same logic as the backtester. It tracks the 'rolling' all-time high (the highest price reached so far), not just the absolute max. New signal: 'AT ATH' shows when a stock is at its peak with no pullback yet."
+        },
+        {
+            "version": "1.2.1",
+            "date": "2026-02-13", 
+            "technical": "Added comprehensive CSS overrides for BaseWeb components to force dark theme on select dropdowns and input fields.",
+            "user": "Fixed display issues where some users saw white text on white backgrounds. Dropdowns and input fields now have dark backgrounds on all browsers/devices."
+        },
+        {
+            "version": "1.2.0",
+            "date": "2026-02-11",
+            "technical": "Implemented global authentication with Supabase. Session persistence via URL query params. RLS policies for user data isolation.",
+            "user": "Added login/registration system. Your settings are now saved to your account and persist across sessions. Log in from any device to access your saved tickers and parameters."
+        },
+        {
+            "version": "1.1.0",
+            "date": "2026-01-30",
+            "technical": "Created Signal Dashboard with yfinance integration, ticker management, position tracking, and scheduled check configuration.",
+            "user": "New Signal Dashboard page! Add your tickers, set your buy/sell thresholds, and check live prices to get BUY/SELL/HOLD signals based on your strategy parameters."
+        },
+        {
+            "version": "1.0.0",
+            "date": "2026-01-29",
+            "technical": "Initial release with backtest engine, Strategy Finder with grid search optimization, ATH/ATR entry modes, multiple exit strategies.",
+            "user": "First release of S&S Analytics. Test pullback strategies on historical data, find optimal parameters with Strategy Finder, visualize results with charts and trade markers."
+        },
+    ]
+    
+    for entry in changelog_entries:
+        st.markdown(f"""
+        <div style="background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); 
+                    border: 1px solid #334155; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 1.2rem; color: #3b82f6; font-weight: 600;">v{entry['version']}</span>
+                <span style="color: #64748b; font-size: 0.85rem;">{entry['date']}</span>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <div style="color: #22c55e; font-size: 0.75rem; font-weight: 600; margin-bottom: 0.25rem;">WHAT'S NEW</div>
+                <p style="color: #f1f5f9; margin: 0;">{entry['user']}</p>
+            </div>
+            <details style="color: #94a3b8;">
+                <summary style="cursor: pointer; font-size: 0.8rem; color: #64748b;">Technical details</summary>
+                <p style="color: #94a3b8; font-size: 0.85rem; margin-top: 0.5rem; font-family: 'JetBrains Mono', monospace;">{entry['technical']}</p>
+            </details>
+        </div>
+        """, unsafe_allow_html=True)
+
+
 def show_guide():
     """Display the documentation/guide page."""
     
-    # Back button
-    if st.button("← Back to Backtester"):
-        st.session_state['page'] = 'backtest'
-        st.rerun()
+    # Header row with back and changelog buttons
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col1:
+        if st.button("← Back to Backtester"):
+            st.session_state['page'] = 'backtest'
+            st.rerun()
+    with col3:
+        if st.button("📋 Changelog"):
+            st.session_state['page'] = 'changelog'
+            st.rerun()
     
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
@@ -2707,6 +2789,8 @@ if __name__ == "__main__":
             show_optimizer()
         elif current_page == 'guide':
             show_guide()
+        elif current_page == 'changelog':
+            show_changelog()
         elif current_page == 'signals':
             show_signals()
         else:
