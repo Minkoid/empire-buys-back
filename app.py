@@ -1202,16 +1202,30 @@ def show_signals():
         summary_items = []
         for ticker, result in st.session_state['signal_results'].items():
             signal = result.get('signal', 'UNKNOWN')
+            pullback = result.get('pullback_pct', 0)
+            price = result.get('price', 0)
+            price_str = f"${price:.2f}" if ticker != '^N225' else f"¥{price:,.0f}"
+            
             if signal == 'BUY':
-                summary_items.append(f"🟢 **{ticker}**: BUY SIGNAL - Price {result.get('price', 'N/A')} ({result.get('pullback_pct', 0):.1f}% below ATH)")
+                summary_items.append(f"🟢 **{ticker}**: BUY SIGNAL - {price_str} ({pullback:.1f}% below ATH)")
             elif signal == 'SELL':
                 summary_items.append(f"🔴 **{ticker}**: SELL SIGNAL - Target reached")
             elif signal == 'STOP':
                 summary_items.append(f"🔴 **{ticker}**: STOP-LOSS - Exit position")
             elif signal == 'WATCHING':
-                summary_items.append(f"🟡 **{ticker}**: WATCHING - {result.get('pullback_pct', 0):.1f}% below ATH (need {st.session_state['signal_tickers'][ticker]['pullback']:.1f}%)")
+                target_pullback = st.session_state['signal_tickers'][ticker]['pullback']
+                summary_items.append(f"🟡 **{ticker}**: WATCHING - {pullback:.1f}% below ATH (need {target_pullback:.1f}%)")
+            elif signal == 'AT_ATH':
+                summary_items.append(f"🔵 **{ticker}**: AT ALL-TIME HIGH - No pullback yet")
+            elif signal == 'IN_POSITION':
+                entry = st.session_state['signal_tickers'][ticker].get('entry_price', 0)
+                if entry:
+                    pnl = (price - entry) / entry * 100
+                    summary_items.append(f"📊 **{ticker}**: IN POSITION - {price_str} ({pnl:+.1f}% P&L)")
+                else:
+                    summary_items.append(f"📊 **{ticker}**: IN POSITION - {price_str}")
             else:
-                summary_items.append(f"⚪ **{ticker}**: HOLD - No action needed")
+                summary_items.append(f"⚪ **{ticker}**: HOLD - {pullback:.1f}% below ATH")
         
         last_check = st.session_state.get('last_check_time', 'Never')
         if last_check and last_check != 'Never':
@@ -1300,20 +1314,28 @@ def show_signals():
             
             for ticker, settings in st.session_state['signal_tickers'].items():
                 try:
-                    # Fetch recent data to calculate ATH and current price
+                    # Fetch recent data - use same logic as backtest engine
                     stock = yf.Ticker(ticker)
-                    hist = stock.history(period="2y")  # 2 years to find ATH
+                    hist = stock.history(period="2y")
                     
                     if len(hist) > 0:
-                        current_price = hist['Close'].iloc[-1]
-                        ath = hist['Close'].max()
-                        pullback_pct = (ath - current_price) / ath * 100
+                        # Calculate rolling ATH (same as backtest engine: cummax)
+                        hist['ATH'] = hist['Close'].cummax()
                         
-                        # Determine signal
+                        current_price = hist['Close'].iloc[-1]
+                        current_ath = hist['ATH'].iloc[-1]  # Rolling ATH up to today
+                        
+                        # Calculate pullback from current rolling ATH
+                        pullback_pct = (current_ath - current_price) / current_ath * 100
+                        
+                        # Check if we just made a new ATH (price == ATH)
+                        at_new_ath = abs(current_price - current_ath) / current_ath < 0.001  # Within 0.1%
+                        
+                        # Determine signal using same logic as backtest engine
                         signal = 'HOLD'
                         
                         if settings['in_position']:
-                            # Check exit conditions
+                            # Check exit conditions (same as backtest: percent rebound from entry)
                             entry = settings['entry_price']
                             if entry:
                                 pnl_pct = (current_price - entry) / entry * 100
@@ -1324,17 +1346,21 @@ def show_signals():
                                 else:
                                     signal = 'IN_POSITION'
                         else:
-                            # Check entry condition
+                            # Entry conditions (same as backtest engine)
+                            # Only signal BUY if we're in a pullback from ATH
                             if pullback_pct >= settings['pullback']:
                                 signal = 'BUY'
-                            elif pullback_pct >= settings['pullback'] * 0.7:  # Within 70% of trigger
+                            elif pullback_pct >= settings['pullback'] * 0.7:
                                 signal = 'WATCHING'
+                            elif at_new_ath:
+                                signal = 'AT_ATH'  # At all-time high, no pullback yet
                         
                         st.session_state['signal_results'][ticker] = {
                             'price': current_price,
-                            'ath': ath,
+                            'ath': current_ath,
                             'pullback_pct': pullback_pct,
                             'signal': signal,
+                            'at_ath': at_new_ath,
                             'last_update': datetime.now(uk_tz)
                         }
                 except Exception as e:
@@ -1358,13 +1384,15 @@ def show_signals():
             # Determine card border color based on signal
             border_color = "#334155"  # default
             if signal == 'BUY':
-                border_color = "#22c55e"
+                border_color = "#22c55e"  # green
             elif signal in ['SELL', 'STOP']:
-                border_color = "#ef4444"
+                border_color = "#ef4444"  # red
             elif signal == 'WATCHING':
-                border_color = "#f59e0b"
+                border_color = "#f59e0b"  # amber
             elif signal == 'IN_POSITION':
-                border_color = "#3b82f6"
+                border_color = "#3b82f6"  # blue
+            elif signal == 'AT_ATH':
+                border_color = "#8b5cf6"  # purple - at all-time high
             
             with st.container():
                 st.markdown(f"""
@@ -1375,8 +1403,8 @@ def show_signals():
                             <span style="font-size: 1.25rem; font-weight: 600; color: #f8fafc;">{ticker}</span>
                             <span style="color: #cbd5e1; margin-left: 0.5rem;">{AVAILABLE_TICKERS.get(ticker, '')}</span>
                         </div>
-                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: {'#22c55e' if signal == 'BUY' else '#ef4444' if signal in ['SELL', 'STOP'] else '#f59e0b' if signal == 'WATCHING' else '#cbd5e1'};">
-                            {signal}
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: {'#22c55e' if signal == 'BUY' else '#ef4444' if signal in ['SELL', 'STOP'] else '#f59e0b' if signal == 'WATCHING' else '#8b5cf6' if signal == 'AT_ATH' else '#3b82f6' if signal == 'IN_POSITION' else '#cbd5e1'};">
+                            {signal.replace('_', ' ')}
                         </div>
                     </div>
                 </div>
