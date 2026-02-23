@@ -78,10 +78,11 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 
 1. **Main/Backtest** - Manual strategy testing with parameter controls
 2. **Strategy Finder** - Grid search optimization across parameter ranges
-3. **Signal Dashboard** - Live price checking, BUY/SELL signals
-4. **Guide** - User documentation
-5. **Changelog** - Version history (technical + user-friendly)
-6. **Plan/Roadmap** - Future upgrade plans
+3. **Signal Dashboard** - Live price checking, BUY/SELL signals (ATH-based)
+4. **Daily Signals** - Intraday signals based on today's open price
+5. **Guide** - User documentation
+6. **Changelog** - Version history (technical + user-friendly)
+7. **Plan/Roadmap** - Future upgrade plans
 
 ---
 
@@ -101,6 +102,17 @@ Uses **rolling ATH** (cummax) matching backtest engine:
 - `WATCHING` - Within 70% of pullback threshold
 - `BUY` - Pullback threshold reached
 - `HOLD` - In pullback but not deep enough
+- `IN_POSITION` - User marked as holding
+- `SELL` - Rebound target reached
+- `STOP` - Stop-loss triggered
+
+## Daily Signals Logic (v1.3.0)
+
+Uses **today's opening price** instead of ATH:
+- `ABOVE_OPEN` - Price above today's open (no signal)
+- `WATCHING` - Within 70% of pullback threshold from open
+- `BUY` - Dropped below open by pullback % threshold
+- `HOLD` - Below open but not deep enough
 - `IN_POSITION` - User marked as holding
 - `SELL` - Rebound target reached
 - `STOP` - Stop-loss triggered

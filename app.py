@@ -1544,6 +1544,382 @@ def show_signals():
     """, unsafe_allow_html=True)
 
 
+def show_daily_signals():
+    """Display Daily Signals - using today's open price instead of ATH."""
+    import yfinance as yf
+    from datetime import datetime, timedelta
+    import pytz
+    
+    # Import database module
+    try:
+        from database import (
+            is_database_configured,
+            save_ticker_settings, load_ticker_settings,
+        )
+        db_available = is_database_configured()
+    except ImportError:
+        db_available = False
+        def load_ticker_settings(uid): return None
+        def save_ticker_settings(uid, data): return False
+    
+    # Get current user
+    user = get_current_user()
+    
+    # Initialize session state for daily signals (separate from ATH signals)
+    if 'daily_signal_tickers' not in st.session_state:
+        # Try to load from database or use defaults
+        if db_available and user:
+            saved_settings = load_ticker_settings(user.id)
+            if saved_settings:
+                st.session_state['daily_signal_tickers'] = saved_settings.copy()
+            else:
+                st.session_state['daily_signal_tickers'] = {
+                    'QQQ': {'pullback': 1.0, 'rebound': 2.0, 'stop_loss': 1.5, 'in_position': False, 'entry_price': None},
+                    '^N225': {'pullback': 1.5, 'rebound': 2.0, 'stop_loss': 2.0, 'in_position': False, 'entry_price': None},
+                }
+        else:
+            st.session_state['daily_signal_tickers'] = {
+                'QQQ': {'pullback': 1.0, 'rebound': 2.0, 'stop_loss': 1.5, 'in_position': False, 'entry_price': None},
+                '^N225': {'pullback': 1.5, 'rebound': 2.0, 'stop_loss': 2.0, 'in_position': False, 'entry_price': None},
+            }
+    
+    if 'daily_last_check_time' not in st.session_state:
+        st.session_state['daily_last_check_time'] = None
+    
+    if 'daily_signal_results' not in st.session_state:
+        st.session_state['daily_signal_results'] = {}
+    
+    # Header row
+    header_col1, header_col2, header_col3 = st.columns([1, 3, 1])
+    
+    with header_col1:
+        if st.button("← Back"):
+            st.session_state['page'] = 'backtest'
+            st.rerun()
+    
+    with header_col2:
+        if user:
+            st.markdown(f"<span style='color: #64748b; font-size: 0.85rem;'>👤 {user.email}</span>", unsafe_allow_html=True)
+    
+    with header_col3:
+        if st.button("Logout", key="daily_logout"):
+            logout()
+    
+    st.markdown("""
+    <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">📅</div>
+        <h1 class="app-title">Daily Signals</h1>
+        <p class="app-subtitle">Intraday signals based on today's opening price</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Explanation
+    st.markdown("""
+    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <p style="color: #cbd5e1; margin: 0; font-size: 0.9rem;">
+            <strong>How it works:</strong> Pullback % is calculated from <strong>today's opening price</strong>, not the all-time high. 
+            Useful for intraday dip-buying strategies.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Daily Instructions Summary Box
+    if st.session_state['daily_signal_results']:
+        st.markdown('<div class="section-header">📋 Current Daily Signals</div>', unsafe_allow_html=True)
+        
+        summary_items = []
+        for ticker, result in st.session_state['daily_signal_results'].items():
+            signal = result.get('signal', 'UNKNOWN')
+            pullback = result.get('pullback_pct', 0)
+            price = result.get('price', 0)
+            
+            if signal == 'ERROR':
+                error_msg = result.get('error', 'Unknown error')
+                summary_items.append(f"❌ **{ticker}**: ERROR - {error_msg[:50]}")
+                continue
+            
+            price_str = f"${price:.2f}" if ticker != '^N225' else f"¥{price:,.0f}"
+            ticker_settings = st.session_state.get('daily_signal_tickers', {}).get(ticker, {})
+            
+            if signal == 'BUY':
+                summary_items.append(f"🟢 **{ticker}**: BUY SIGNAL - {price_str} ({pullback:.1f}% below open)")
+            elif signal == 'SELL':
+                summary_items.append(f"🔴 **{ticker}**: SELL SIGNAL - Target reached")
+            elif signal == 'STOP':
+                summary_items.append(f"🔴 **{ticker}**: STOP-LOSS - Exit position")
+            elif signal == 'WATCHING':
+                target_pullback = ticker_settings.get('pullback', 1.0)
+                summary_items.append(f"🟡 **{ticker}**: WATCHING - {pullback:.1f}% below open (need {target_pullback:.1f}%)")
+            elif signal == 'ABOVE_OPEN':
+                summary_items.append(f"🔵 **{ticker}**: ABOVE OPEN - Trading higher than open (+{abs(pullback):.1f}%)")
+            elif signal == 'IN_POSITION':
+                entry = ticker_settings.get('entry_price', 0)
+                if entry and price:
+                    pnl = (price - entry) / entry * 100
+                    summary_items.append(f"📊 **{ticker}**: IN POSITION - {price_str} ({pnl:+.1f}% P&L)")
+                else:
+                    summary_items.append(f"📊 **{ticker}**: IN POSITION - {price_str}")
+            else:
+                summary_items.append(f"⚪ **{ticker}**: HOLD - {pullback:.1f}% from open")
+        
+        last_check = st.session_state.get('daily_last_check_time', 'Never')
+        if last_check and last_check != 'Never':
+            last_check_str = last_check.strftime("%Y-%m-%d %H:%M:%S %Z")
+        else:
+            last_check_str = "Never"
+        
+        st.markdown(f"""
+        <div style="background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border: 1px solid #334155; 
+                    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <div style="color: #cbd5e1; font-size: 0.8rem; margin-bottom: 1rem;">Last checked: {last_check_str}</div>
+            {'<br>'.join(summary_items) if summary_items else 'No signals yet - click Check Now'}
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("")
+    
+    # Control Row
+    ctrl_col1, ctrl_col2, ctrl_col3 = st.columns([2, 1, 1])
+    
+    with ctrl_col1:
+        st.markdown("**Check Prices**")
+        st.markdown("<span style='color: #cbd5e1; font-size: 0.85rem;'>Compares current price to today's opening price.</span>", unsafe_allow_html=True)
+    
+    with ctrl_col2:
+        st.markdown("**Actions**")
+        check_now = st.button("🔄 Check Now", type="primary", use_container_width=True, key="daily_check",
+                              help="Fetch current prices and calculate signals vs today's open")
+    
+    with ctrl_col3:
+        st.markdown("**Add Ticker**")
+        if st.button("➕ Add Ticker", use_container_width=True, key="daily_add"):
+            st.session_state['show_daily_add_ticker'] = True
+    
+    # Add Ticker Form
+    if st.session_state.get('show_daily_add_ticker', False):
+        st.markdown("")
+        st.markdown('<div class="section-header">➕ Add New Ticker</div>', unsafe_allow_html=True)
+        
+        add_col1, add_col2, add_col3, add_col4, add_col5 = st.columns([2, 1, 1, 1, 1])
+        
+        with add_col1:
+            available = [t for t in AVAILABLE_TICKERS.keys() if t not in st.session_state['daily_signal_tickers']]
+            if available:
+                new_ticker = st.selectbox("Ticker", options=available, 
+                                          format_func=lambda x: f"{x} - {AVAILABLE_TICKERS[x]}", key="daily_new_ticker")
+            else:
+                st.warning("All tickers already added")
+                new_ticker = None
+        
+        with add_col2:
+            new_pullback = st.number_input("Pullback %", 0.1, 10.0, 1.0, 0.1, key="daily_new_pb")
+        
+        with add_col3:
+            new_rebound = st.number_input("Rebound %", 0.1, 10.0, 2.0, 0.1, key="daily_new_rb")
+        
+        with add_col4:
+            new_stop = st.number_input("Stop-Loss %", 0.1, 10.0, 1.5, 0.1, key="daily_new_sl")
+        
+        with add_col5:
+            st.markdown("")
+            st.markdown("")
+            if st.button("✅ Add", use_container_width=True, key="daily_add_btn") and new_ticker:
+                st.session_state['daily_signal_tickers'][new_ticker] = {
+                    'pullback': new_pullback,
+                    'rebound': new_rebound,
+                    'stop_loss': new_stop,
+                    'in_position': False,
+                    'entry_price': None
+                }
+                st.session_state['show_daily_add_ticker'] = False
+                st.rerun()
+        
+        if st.button("Cancel", key="daily_cancel"):
+            st.session_state['show_daily_add_ticker'] = False
+            st.rerun()
+    
+    st.markdown("")
+    
+    # Check prices if requested
+    if check_now:
+        with st.spinner("Fetching latest prices..."):
+            uk_tz = pytz.timezone('Europe/London')
+            st.session_state['daily_last_check_time'] = datetime.now(uk_tz)
+            
+            for ticker, settings in st.session_state['daily_signal_tickers'].items():
+                try:
+                    stock = yf.Ticker(ticker)
+                    # Get today's data
+                    hist = stock.history(period="5d")  # Get last 5 days to ensure we have today
+                    
+                    if len(hist) > 0:
+                        # Get today's open and current price
+                        today_open = hist['Open'].iloc[-1]
+                        current_price = hist['Close'].iloc[-1]
+                        
+                        # Calculate pullback from today's open
+                        # Positive = below open, Negative = above open
+                        pullback_pct = (today_open - current_price) / today_open * 100
+                        
+                        # Check if above open
+                        above_open = current_price > today_open
+                        
+                        # Determine signal
+                        signal = 'HOLD'
+                        
+                        if settings['in_position']:
+                            entry = settings['entry_price']
+                            if entry:
+                                pnl_pct = (current_price - entry) / entry * 100
+                                if pnl_pct >= settings['rebound']:
+                                    signal = 'SELL'
+                                elif pnl_pct <= -settings['stop_loss']:
+                                    signal = 'STOP'
+                                else:
+                                    signal = 'IN_POSITION'
+                        else:
+                            if above_open:
+                                signal = 'ABOVE_OPEN'
+                            elif pullback_pct >= settings['pullback']:
+                                signal = 'BUY'
+                            elif pullback_pct >= settings['pullback'] * 0.7:
+                                signal = 'WATCHING'
+                        
+                        st.session_state['daily_signal_results'][ticker] = {
+                            'price': current_price,
+                            'open': today_open,
+                            'pullback_pct': pullback_pct,
+                            'signal': signal,
+                            'above_open': above_open,
+                            'last_update': datetime.now(uk_tz)
+                        }
+                except Exception as e:
+                    st.session_state['daily_signal_results'][ticker] = {
+                        'error': str(e),
+                        'signal': 'ERROR'
+                    }
+        
+        st.rerun()
+    
+    # Ticker Cards
+    st.markdown('<div class="section-header">📊 Your Tickers</div>', unsafe_allow_html=True)
+    
+    if not st.session_state['daily_signal_tickers']:
+        st.info("No tickers configured. Click 'Add Ticker' to get started.")
+    else:
+        for ticker, settings in st.session_state['daily_signal_tickers'].items():
+            result = st.session_state['daily_signal_results'].get(ticker, {})
+            signal = result.get('signal', 'NOT_CHECKED')
+            
+            # Determine card border color
+            border_color = "#334155"
+            if signal == 'BUY':
+                border_color = "#22c55e"
+            elif signal in ['SELL', 'STOP']:
+                border_color = "#ef4444"
+            elif signal == 'WATCHING':
+                border_color = "#f59e0b"
+            elif signal == 'IN_POSITION':
+                border_color = "#3b82f6"
+            elif signal == 'ABOVE_OPEN':
+                border_color = "#8b5cf6"
+            
+            with st.container():
+                st.markdown(f"""
+                <div style="background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); 
+                            border: 2px solid {border_color}; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="font-size: 1.25rem; font-weight: 600; color: #f8fafc;">{ticker}</span>
+                            <span style="color: #cbd5e1; margin-left: 0.5rem;">{AVAILABLE_TICKERS.get(ticker, '')}</span>
+                        </div>
+                        <div style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: {'#22c55e' if signal == 'BUY' else '#ef4444' if signal in ['SELL', 'STOP'] else '#f59e0b' if signal == 'WATCHING' else '#8b5cf6' if signal == 'ABOVE_OPEN' else '#3b82f6' if signal == 'IN_POSITION' else '#cbd5e1'};">
+                            {signal.replace('_', ' ')}
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Editable settings row
+                col1, col2, col3, col4, col5, col6, col7 = st.columns([1.5, 1, 1, 1, 1.5, 1, 0.8])
+                
+                with col1:
+                    if result.get('price'):
+                        st.metric("Current Price", f"${result['price']:.2f}" if ticker != '^N225' else f"¥{result['price']:,.0f}")
+                    else:
+                        st.metric("Current Price", "Not checked")
+                
+                with col2:
+                    if result.get('open'):
+                        st.metric("Today's Open", f"${result['open']:.2f}" if ticker != '^N225' else f"¥{result['open']:,.0f}")
+                    else:
+                        st.metric("Today's Open", "-")
+                
+                with col3:
+                    if result.get('pullback_pct') is not None:
+                        pct = result['pullback_pct']
+                        st.metric("From Open", f"{pct:+.2f}%" if pct < 0 else f"-{pct:.2f}%")
+                    else:
+                        st.metric("From Open", "-")
+                
+                with col4:
+                    new_pullback = st.number_input("Pullback %", 0.1, 10.0, settings['pullback'], 0.1, 
+                                                   key=f"daily_pb_{ticker}", label_visibility="collapsed")
+                    if new_pullback != settings['pullback']:
+                        st.session_state['daily_signal_tickers'][ticker]['pullback'] = new_pullback
+                
+                with col5:
+                    new_rebound = st.number_input("Rebound %", 0.1, 10.0, settings['rebound'], 0.1,
+                                                  key=f"daily_rb_{ticker}", label_visibility="collapsed")
+                    if new_rebound != settings['rebound']:
+                        st.session_state['daily_signal_tickers'][ticker]['rebound'] = new_rebound
+                
+                with col6:
+                    new_stop = st.number_input("Stop %", 0.1, 10.0, settings['stop_loss'], 0.1,
+                                               key=f"daily_sl_{ticker}", label_visibility="collapsed")
+                    if new_stop != settings['stop_loss']:
+                        st.session_state['daily_signal_tickers'][ticker]['stop_loss'] = new_stop
+                
+                with col7:
+                    if st.button("🗑️", key=f"daily_del_{ticker}", help=f"Remove {ticker}"):
+                        del st.session_state['daily_signal_tickers'][ticker]
+                        if ticker in st.session_state['daily_signal_results']:
+                            del st.session_state['daily_signal_results'][ticker]
+                        st.rerun()
+                
+                # Position tracking
+                pos_col1, pos_col2 = st.columns([1, 3])
+                with pos_col1:
+                    in_pos = st.checkbox("In Position", value=settings['in_position'], key=f"daily_pos_{ticker}",
+                                        help="Check this if you've bought this ticker")
+                    if in_pos != settings['in_position']:
+                        st.session_state['daily_signal_tickers'][ticker]['in_position'] = in_pos
+                        if in_pos and result.get('price'):
+                            st.session_state['daily_signal_tickers'][ticker]['entry_price'] = result['price']
+                        elif not in_pos:
+                            st.session_state['daily_signal_tickers'][ticker]['entry_price'] = None
+                
+                with pos_col2:
+                    if settings['in_position'] and settings['entry_price']:
+                        entry = settings['entry_price']
+                        if result.get('price'):
+                            pnl = (result['price'] - entry) / entry * 100
+                            target = entry * (1 + settings['rebound'] / 100)
+                            stop = entry * (1 - settings['stop_loss'] / 100)
+                            st.markdown(f"Entry: **${entry:.2f}** | P&L: **{pnl:+.1f}%** | Target: ${target:.2f} | Stop: ${stop:.2f}")
+                
+                st.markdown("---")
+    
+    # Footer
+    st.markdown("""
+    <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155;">
+        <p style="color: #cbd5e1; font-size: 0.8rem;">
+            💡 Daily signals compare current price to today's opening price. Best used during market hours.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+
 def show_changelog():
     """Display the version changelog."""
     
@@ -1579,6 +1955,12 @@ def show_changelog():
             "date": "2026-02-13",
             "technical": "Updated Signal Dashboard to use cummax() rolling ATH calculation matching backtest engine. Added AT_ATH signal state.",
             "user": "Signal Dashboard now uses the same logic as the backtester. It tracks the 'rolling' all-time high (the highest price reached so far), not just the absolute max. New signal: 'AT ATH' shows when a stock is at its peak with no pullback yet."
+        },
+        {
+            "version": "1.3.0",
+            "date": "2026-01-30",
+            "technical": "Added show_daily_signals() function comparing current price to today's open instead of rolling ATH. Separate session state for daily tickers. Added 8th header column for Daily button.",
+            "user": "New Daily Signals page! Get intraday buy signals when price drops below today's opening price by your threshold. Perfect for dip-buying during market hours."
         },
         {
             "version": "1.2.1",
@@ -2378,7 +2760,7 @@ def main():
                 logout()
     
     # Header row with title, ticker selector, and run button
-    header_col1, header_col2, header_col3, header_col4, header_col5, header_col6, header_col7 = st.columns([2.5, 1.5, 0.8, 0.8, 0.8, 0.8, 0.8])
+    header_col1, header_col2, header_col3, header_col4, header_col5, header_col6, header_col7, header_col8 = st.columns([2.5, 1.5, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7])
     
     with header_col1:
         st.markdown("""
@@ -2407,16 +2789,21 @@ def main():
             st.rerun()
     
     with header_col5:
-        if st.button("📡 Signals", use_container_width=True, help="Monitor your tickers and get live buy/sell signals"):
+        if st.button("📡 Signals", use_container_width=True, help="Monitor your tickers and get live buy/sell signals (ATH-based)"):
             st.session_state['page'] = 'signals'
             st.rerun()
     
     with header_col6:
+        if st.button("📅 Daily", use_container_width=True, help="Intraday signals based on today's opening price"):
+            st.session_state['page'] = 'daily_signals'
+            st.rerun()
+    
+    with header_col7:
         if st.button("📖 Guide", use_container_width=True, help="Learn how to use S&S Analytics and understand the key concepts"):
             st.session_state['page'] = 'guide'
             st.rerun()
     
-    with header_col7:
+    with header_col8:
         if st.button("📋 Plan", use_container_width=True, help="View the planned future upgrades for S&S Analytics"):
             st.session_state['page'] = 'roadmap'
             st.rerun()
@@ -2799,5 +3186,7 @@ if __name__ == "__main__":
             show_changelog()
         elif current_page == 'signals':
             show_signals()
+        elif current_page == 'daily_signals':
+            show_daily_signals()
         else:
             main()
