@@ -291,6 +291,105 @@ def get_signal_history(user_id: str, limit: int = 50) -> List[Dict]:
         return []
 
 
+# ============== Automation Settings ==============
+
+def save_automation_settings(user_id: str, settings: Dict) -> bool:
+    """
+    Save user's automation/notification settings.
+    
+    Args:
+        user_id: The user's ID
+        settings: Dict with telegram_enabled, telegram_bot_token, telegram_chat_id, etc.
+    """
+    client = get_supabase_client()
+    if not client:
+        return False
+    
+    try:
+        # Separate sensitive token from other settings
+        settings_json = json.dumps({
+            'telegram_enabled': settings.get('telegram_enabled', False),
+            'daily_signal_time': settings.get('daily_signal_time', '20:30'),
+            'signal_types': settings.get('signal_types', ['ATH', 'Daily']),
+            'notify_buy_only': settings.get('notify_buy_only', False),
+        })
+        
+        client.table('user_settings').upsert({
+            'user_id': user_id,
+            'automation_settings': settings_json,
+            'telegram_bot_token': settings.get('telegram_bot_token', ''),
+            'telegram_chat_id': settings.get('telegram_chat_id', ''),
+            'updated_at': datetime.now(pytz.UTC).isoformat()
+        }).execute()
+        
+        return True
+    except Exception as e:
+        st.error(f"Failed to save automation settings: {e}")
+        return False
+
+
+def load_automation_settings(user_id: str) -> Dict:
+    """
+    Load user's automation/notification settings.
+    Returns dict with all automation preferences.
+    """
+    client = get_supabase_client()
+    if not client:
+        return {
+            'telegram_enabled': False,
+            'telegram_bot_token': '',
+            'telegram_chat_id': '',
+            'daily_signal_time': '20:30',
+            'signal_types': ['ATH', 'Daily'],
+            'notify_buy_only': False
+        }
+    
+    try:
+        response = client.table('user_settings').select(
+            'automation_settings, telegram_bot_token, telegram_chat_id'
+        ).eq('user_id', user_id).execute()
+        
+        if response.data and len(response.data) > 0:
+            row = response.data[0]
+            settings_json = row.get('automation_settings')
+            
+            result = {
+                'telegram_bot_token': row.get('telegram_bot_token', ''),
+                'telegram_chat_id': row.get('telegram_chat_id', ''),
+            }
+            
+            if settings_json:
+                parsed = json.loads(settings_json)
+                result.update(parsed)
+            else:
+                result.update({
+                    'telegram_enabled': False,
+                    'daily_signal_time': '20:30',
+                    'signal_types': ['ATH', 'Daily'],
+                    'notify_buy_only': False
+                })
+            
+            return result
+        
+        return {
+            'telegram_enabled': False,
+            'telegram_bot_token': '',
+            'telegram_chat_id': '',
+            'daily_signal_time': '20:30',
+            'signal_types': ['ATH', 'Daily'],
+            'notify_buy_only': False
+        }
+    except:
+        return {
+            'telegram_enabled': False,
+            'telegram_bot_token': '',
+            'telegram_chat_id': '',
+            'daily_signal_time': '20:30',
+            'signal_types': ['ATH', 'Daily'],
+            'notify_buy_only': False
+        }
+
+
 # ============== Database Setup SQL ==============
 
 def get_setup_sql() -> str:
@@ -306,9 +405,17 @@ CREATE TABLE IF NOT EXISTS user_settings (
     ticker_settings JSONB,
     check_time VARCHAR(5) DEFAULT '20:30',
     schedule_enabled BOOLEAN DEFAULT FALSE,
+    automation_settings JSONB,
+    telegram_bot_token TEXT,
+    telegram_chat_id TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- If table already exists, add new columns
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS automation_settings JSONB;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS telegram_bot_token TEXT;
+ALTER TABLE user_settings ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT;
 
 -- Signal History Table  
 CREATE TABLE IF NOT EXISTS signal_history (

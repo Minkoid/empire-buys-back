@@ -80,9 +80,10 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 2. **Strategy Finder** - Grid search optimization across parameter ranges
 3. **Signal Dashboard** - Live price checking, BUY/SELL signals (ATH-based)
 4. **Daily Signals** - Intraday signals based on today's open price
-5. **Guide** - User documentation
-6. **Changelog** - Version history (technical + user-friendly)
-7. **Plan/Roadmap** - Future upgrade plans
+5. **Automation** - Telegram notifications setup and future automation
+6. **Guide** - User documentation
+7. **Changelog** - Version history (technical + user-friendly)
+8. **Plan/Roadmap** - Future upgrade plans
 
 ---
 
@@ -116,6 +117,16 @@ Uses **today's opening price** instead of ATH:
 - `IN_POSITION` - User marked as holding
 - `SELL` - Rebound target reached
 - `STOP` - Stop-loss triggered
+
+## Automation Page (v1.4.0)
+
+Telegram notification setup:
+- Bot token and chat ID configuration
+- Test connection button sends live message
+- Schedule time picker (UK timezone)
+- Signal type selection (ATH and/or Daily)
+- BUY-only notification option
+- Settings saved to database per user
 
 ---
 
