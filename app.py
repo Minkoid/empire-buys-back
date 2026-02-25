@@ -1,6 +1,6 @@
 # AIModified:2026-01-29T15:22:18Z
 """
-S&S Analytics - Pullback Strategy Backtesting Tool
+Snowy & Saunders Analytics - Pullback Strategy Backtesting Tool
 
 A Streamlit application for backtesting pullback-based trading strategies.
 Supports ATH-based, ATR-based, and EMA-relative entry/exit modes.
@@ -42,7 +42,7 @@ AVAILABLE_TICKERS = {
 
 # Page configuration
 st.set_page_config(
-    page_title="S&S Analytics",
+    page_title="Snowy & Saunders Analytics",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -109,7 +109,7 @@ def show_login_page():
     st.markdown("""
     <div style="text-align: center; padding: 2rem 0 3rem 0;">
         <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
-        <h1 class="app-title">S&S Analytics</h1>
+        <h1 class="app-title">Snowy & Saunders Analytics</h1>
         <p class="app-subtitle">Pullback Strategy Backtesting & Signal Generation</p>
     </div>
     """, unsafe_allow_html=True)
@@ -182,7 +182,7 @@ def show_login_page():
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
         <p style="color: #cbd5e1; font-size: 0.85rem;">
-            S&S Analytics by Snowy & Saunders © 2026
+            Snowy & Saunders Analytics by Snowy & Saunders © 2026
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -233,18 +233,18 @@ st.markdown("""
     }
     
     h1, h2, h3 {
-        font-family: 'Press Start 2P', cursive !important;
-        font-weight: 400 !important;
-        font-size: 0.9rem !important;
+        font-family: Georgia, 'Times New Roman', serif !important;
+        font-weight: 600 !important;
+        font-size: 1.1rem !important;
     }
     
     .app-title {
-        font-family: 'Press Start 2P', cursive !important;
-        font-weight: 400 !important;
-        font-size: 1.6rem !important;
+        font-family: Georgia, 'Times New Roman', serif !important;
+        font-weight: 700 !important;
+        font-size: 1.8rem !important;
         color: #f8fafc !important;
-        letter-spacing: 0.05em;
-        text-shadow: 2px 2px 0px #3b82f6, 4px 4px 0px rgba(59, 130, 246, 0.3);
+        letter-spacing: 0.02em;
+        text-shadow: 1px 1px 2px rgba(59, 130, 246, 0.3);
     }
     
     .app-subtitle {
@@ -271,12 +271,12 @@ st.markdown("""
     }
     
     .metric-label {
-        font-family: 'Press Start 2P', cursive;
-        font-size: 0.5rem;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 0.75rem;
         color: #cbd5e1;
         text-transform: uppercase;
         letter-spacing: 0.02em;
-        font-weight: 400;
+        font-weight: 500;
     }
     
     .positive { color: #22c55e !important; }
@@ -285,14 +285,13 @@ st.markdown("""
     .warning { color: #f59e0b !important; }
     
     .section-header {
-        font-family: 'Press Start 2P', cursive;
-        font-size: 0.85rem;
-        font-weight: 400;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1rem;
+        font-weight: 600;
         color: #f8fafc;
         margin: 2rem 0 1rem 0;
         padding-bottom: 0.5rem;
         border-bottom: 2px solid #3b82f6;
-        text-shadow: 1px 1px 0px #3b82f6;
     }
     
     /* Make ALL text white/light for better readability */
@@ -530,11 +529,11 @@ st.markdown("""
     }
     
     .control-card-header {
-        font-family: 'Press Start 2P', cursive;
-        font-size: 0.6rem;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 0.85rem;
         color: #3b82f6;
         margin-bottom: 1rem;
-        text-transform: uppercase;
+        font-weight: 600;
         letter-spacing: 0.05em;
     }
     
@@ -912,7 +911,7 @@ def show_roadmap():
     st.markdown("""
     <div style="text-align: center; padding: 1.5rem 0 2rem 0;">
         <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚀</div>
-        <h1 class="app-title">S&S Analytics</h1>
+        <h1 class="app-title">Snowy & Saunders Analytics</h1>
         <p class="app-subtitle">Platform Upgrade Plan - Multi-User & Paper Trading</p>
     </div>
     """, unsafe_allow_html=True)
@@ -920,7 +919,7 @@ def show_roadmap():
     # Current State
     st.markdown('<div class="section-header">📍 Where We Are Now</div>', unsafe_allow_html=True)
     st.markdown("""
-    S&S Analytics is a web app that lets you test "buy the dip" trading strategies on historical stock data, 
+    Snowy & Saunders Analytics is a web app that lets you test "buy the dip" trading strategies on historical stock data, 
     adjusting rules like how big a price drop triggers a buy and when to sell, then instantly shows you 
     how that strategy would have performed over the past 25 years.
     """)
@@ -1105,7 +1104,7 @@ def show_roadmap():
     st.markdown("""
     <div style="text-align: center; padding: 2rem; background: linear-gradient(145deg, rgba(59, 130, 246, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%); 
                 border-radius: 12px; border: 1px solid #3b82f6; margin-top: 2rem;">
-        <h3 style="font-family: 'Press Start 2P', cursive; font-size: 0.75rem; color: #3b82f6; margin-bottom: 1rem;">Ready to Upgrade?</h3>
+        <h3 style="font-family: Georgia, 'Times New Roman', serif; font-size: 0.75rem; color: #3b82f6; margin-bottom: 1rem;">Ready to Upgrade?</h3>
         <p style="color: #cbd5e1; max-width: 600px; margin: 0 auto;">
             The first step is to create a free Supabase account. Once that's done, 
             we can start building the multi-user system and paper trading features.
@@ -1116,7 +1115,7 @@ def show_roadmap():
     # Footer
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
-        <div style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">S&S Analytics</div>
+        <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">Snowy & Saunders Analytics</div>
         <p style="color: #cbd5e1; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
     </div>
     """, unsafe_allow_html=True)
@@ -2223,7 +2222,7 @@ def show_changelog():
             "version": "1.0.0",
             "date": "2026-01-29",
             "technical": "Initial release with backtest engine, Strategy Finder with grid search optimization, ATH/ATR entry modes, multiple exit strategies.",
-            "user": "First release of S&S Analytics. Test pullback strategies on historical data, find optimal parameters with Strategy Finder, visualize results with charts and trade markers."
+            "user": "First release of Snowy & Saunders Analytics. Test pullback strategies on historical data, find optimal parameters with Strategy Finder, visualize results with charts and trade markers."
         },
     ]
     
@@ -2265,14 +2264,14 @@ def show_guide():
     <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">📖</div>
         <h1 class="app-title">User Guide</h1>
-        <p class="app-subtitle">How to use S&S Analytics to find winning strategies</p>
+        <p class="app-subtitle">How to use Snowy & Saunders Analytics to find winning strategies</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Overview
-    st.markdown('<div class="section-header">🎯 What is S&S Analytics?</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🎯 What is Snowy & Saunders Analytics?</div>', unsafe_allow_html=True)
     st.markdown("""
-    S&S Analytics is a **backtesting tool** that lets you test "buy the dip" trading strategies on historical stock data.
+    Snowy & Saunders Analytics is a **backtesting tool** that lets you test "buy the dip" trading strategies on historical stock data.
     
     **The core idea:**
     1. When a stock drops by a certain percentage from its peak → **BUY**
@@ -2586,7 +2585,7 @@ SUPABASE_KEY = "your-anon-public-key"
     # Footer
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
-        <div style="font-family: 'Press Start 2P', cursive; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">S&S Analytics</div>
+        <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">Snowy & Saunders Analytics</div>
         <p style="color: #cbd5e1; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
     </div>
     """, unsafe_allow_html=True)
@@ -3004,7 +3003,7 @@ def main():
     with header_col1:
         st.markdown("""
         <div style="padding: 0.5rem 0;">
-            <span class="app-title">S&S Analytics</span>
+            <span class="app-title">Snowy & Saunders Analytics</span>
         </div>
         """, unsafe_allow_html=True)
     
@@ -3038,7 +3037,7 @@ def main():
             st.rerun()
     
     with header_col7:
-        if st.button("📖 Guide", use_container_width=True, help="Learn how to use S&S Analytics and understand the key concepts"):
+        if st.button("📖 Guide", use_container_width=True, help="Learn how to use Snowy & Saunders Analytics and understand the key concepts"):
             st.session_state['page'] = 'guide'
             st.rerun()
     
@@ -3048,7 +3047,7 @@ def main():
             st.rerun()
     
     with header_col9:
-        if st.button("📋 Plan", use_container_width=True, help="View the planned future upgrades for S&S Analytics"):
+        if st.button("📋 Plan", use_container_width=True, help="View the planned future upgrades for Snowy & Saunders Analytics"):
             st.session_state['page'] = 'roadmap'
             st.rerun()
     

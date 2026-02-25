@@ -199,18 +199,19 @@ def format_signal_email(user: dict, ath_signals: dict, daily_signals: dict) -> t
     
     # Build subject
     if all_buy_signals:
-        subject = f"🟢 S&S Analytics: {len(all_buy_signals)} BUY Signal(s)!"
+        subject = f"🟢 Snowy & Saunders: {len(all_buy_signals)} BUY Signal(s)!"
     else:
-        subject = "📊 S&S Analytics: Daily Signal Summary"
+        subject = "📊 Snowy & Saunders: Daily Signal Summary"
     
     # Build body
     uk_tz = pytz.timezone('Europe/London')
     now = datetime.now(uk_tz)
     
     body_lines = [
-        f"<h2>S&S Analytics - Signal Report</h2>",
-        f"<p><strong>Date:</strong> {now.strftime('%A, %d %B %Y')}</p>",
-        f"<p><strong>Time:</strong> {now.strftime('%H:%M')} UK</p>",
+        f"<h2 style='font-family: Georgia, serif; color: #1e3a5f;'>Snowy & Saunders Analytics</h2>",
+        f"<h3 style='font-family: Georgia, serif; color: #334155;'>Signal Report</h3>",
+        f"<p style='font-family: Georgia, serif;'><strong>Date:</strong> {now.strftime('%A, %d %B %Y')}</p>",
+        f"<p style='font-family: Georgia, serif;'><strong>Time:</strong> {now.strftime('%H:%M')} UK</p>",
         "<hr>"
     ]
     
@@ -254,7 +255,7 @@ def format_signal_email(user: dict, ath_signals: dict, daily_signals: dict) -> t
         body_lines.append("</table>")
     
     body_lines.append("<hr>")
-    body_lines.append("<p style='color: #666; font-size: 12px;'>Sent by S&S Analytics. <a href='https://empire-buys-back.streamlit.app'>Open App</a></p>")
+    body_lines.append("<p style='color: #666; font-size: 12px; font-family: Georgia, serif;'>Sent by Snowy & Saunders Analytics. <a href='https://empire-buys-back.streamlit.app'>Open App</a></p>")
     
     return subject, "\n".join(body_lines)
 
@@ -263,7 +264,7 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
     """Send email via Resend."""
     try:
         params = {
-            "from": "S&S Analytics <signals@resend.dev>",
+            "from": "Snowy & Saunders Analytics <signals@resend.dev>",
             "to": [to_email],
             "subject": subject,
             "html": html_body
@@ -280,7 +281,7 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
 def main():
     """Main entry point for scheduled runs."""
     print("=" * 50)
-    print("S&S Analytics - Signal Email Sender")
+    print("Snowy & Saunders Analytics - Signal Email Sender")
     print("=" * 50)
     
     # Get current UK time
