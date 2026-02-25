@@ -208,10 +208,10 @@ def format_signal_email(user: dict, ath_signals: dict, daily_signals: dict) -> t
     now = datetime.now(uk_tz)
     
     body_lines = [
-        f"<h2 style='font-family: Georgia, serif; color: #1e3a5f;'>Snowy & Saunders Analytics</h2>",
-        f"<h3 style='font-family: Georgia, serif; color: #334155;'>Signal Report</h3>",
-        f"<p style='font-family: Georgia, serif;'><strong>Date:</strong> {now.strftime('%A, %d %B %Y')}</p>",
-        f"<p style='font-family: Georgia, serif;'><strong>Time:</strong> {now.strftime('%H:%M')} UK</p>",
+        f"<h2 style='font-family: Roboto, Arial, sans-serif; color: #1e3a5f;'>Snowy & Saunders Analytics</h2>",
+        f"<h3 style='font-family: Roboto, Arial, sans-serif; color: #334155;'>Signal Report</h3>",
+        f"<p style='font-family: Roboto, Arial, sans-serif;'><strong>Date:</strong> {now.strftime('%A, %d %B %Y')}</p>",
+        f"<p style='font-family: Roboto, Arial, sans-serif;'><strong>Time:</strong> {now.strftime('%H:%M')} UK</p>",
         "<hr>"
     ]
     
@@ -255,7 +255,7 @@ def format_signal_email(user: dict, ath_signals: dict, daily_signals: dict) -> t
         body_lines.append("</table>")
     
     body_lines.append("<hr>")
-    body_lines.append("<p style='color: #666; font-size: 12px; font-family: Georgia, serif;'>Sent by Snowy & Saunders Analytics. <a href='https://empire-buys-back.streamlit.app'>Open App</a></p>")
+    body_lines.append("<p style='color: #666; font-size: 12px; font-family: Roboto, Arial, sans-serif;'>Sent by Snowy & Saunders Analytics. <a href='https://empire-buys-back.streamlit.app'>Open App</a></p>")
     
     return subject, "\n".join(body_lines)
 

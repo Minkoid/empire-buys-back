@@ -206,7 +206,7 @@ def logout():
 # Professional CSS theme
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Roboto:wght@300;400;500;600;700&display=swap');
     
     :root {
         --bg-primary: #0f1419;
@@ -233,13 +233,13 @@ st.markdown("""
     }
     
     h1, h2, h3 {
-        font-family: Georgia, 'Times New Roman', serif !important;
+        font-family: 'Roboto', sans-serif !important;
         font-weight: 600 !important;
         font-size: 1.1rem !important;
     }
     
     .app-title {
-        font-family: Georgia, 'Times New Roman', serif !important;
+        font-family: 'Roboto', sans-serif !important;
         font-weight: 700 !important;
         font-size: 1.8rem !important;
         color: #f8fafc !important;
@@ -271,7 +271,7 @@ st.markdown("""
     }
     
     .metric-label {
-        font-family: Georgia, 'Times New Roman', serif;
+        font-family: 'Roboto', sans-serif;
         font-size: 0.75rem;
         color: #cbd5e1;
         text-transform: uppercase;
@@ -285,7 +285,7 @@ st.markdown("""
     .warning { color: #f59e0b !important; }
     
     .section-header {
-        font-family: Georgia, 'Times New Roman', serif;
+        font-family: 'Roboto', sans-serif;
         font-size: 1rem;
         font-weight: 600;
         color: #f8fafc;
@@ -529,7 +529,7 @@ st.markdown("""
     }
     
     .control-card-header {
-        font-family: Georgia, 'Times New Roman', serif;
+        font-family: 'Roboto', sans-serif;
         font-size: 0.85rem;
         color: #3b82f6;
         margin-bottom: 1rem;
@@ -1104,7 +1104,7 @@ def show_roadmap():
     st.markdown("""
     <div style="text-align: center; padding: 2rem; background: linear-gradient(145deg, rgba(59, 130, 246, 0.1) 0%, rgba(20, 184, 166, 0.1) 100%); 
                 border-radius: 12px; border: 1px solid #3b82f6; margin-top: 2rem;">
-        <h3 style="font-family: Georgia, 'Times New Roman', serif; font-size: 0.75rem; color: #3b82f6; margin-bottom: 1rem;">Ready to Upgrade?</h3>
+        <h3 style="font-family: 'Roboto', sans-serif; font-size: 0.75rem; color: #3b82f6; margin-bottom: 1rem;">Ready to Upgrade?</h3>
         <p style="color: #cbd5e1; max-width: 600px; margin: 0 auto;">
             The first step is to create a free Supabase account. Once that's done, 
             we can start building the multi-user system and paper trading features.
@@ -1115,7 +1115,7 @@ def show_roadmap():
     # Footer
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
-        <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">Snowy & Saunders Analytics</div>
+        <div style="font-family: 'Roboto', sans-serif; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">Snowy & Saunders Analytics</div>
         <p style="color: #cbd5e1; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
     </div>
     """, unsafe_allow_html=True)
@@ -2585,7 +2585,7 @@ SUPABASE_KEY = "your-anon-public-key"
     # Footer
     st.markdown("""
     <div style="text-align: center; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid #334155;">
-        <div style="font-family: Georgia, 'Times New Roman', serif; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">Snowy & Saunders Analytics</div>
+        <div style="font-family: 'Roboto', sans-serif; font-size: 0.6rem; color: #3b82f6; margin-bottom: 0.5rem;">Snowy & Saunders Analytics</div>
         <p style="color: #cbd5e1; font-size: 0.8rem;">Snowy & Saunders © 2026</p>
     </div>
     """, unsafe_allow_html=True)
