@@ -151,11 +151,14 @@ def save_ticker_settings(user_id: str, tickers: Dict) -> bool:
         settings_json = json.dumps(tickers)
         
         # Upsert (insert or update)
-        client.table('user_settings').upsert({
-            'user_id': user_id,
-            'ticker_settings': settings_json,
-            'updated_at': datetime.now(pytz.UTC).isoformat()
-        }).execute()
+        client.table('user_settings').upsert(
+            {
+                'user_id': user_id,
+                'ticker_settings': settings_json,
+                'updated_at': datetime.now(pytz.UTC).isoformat()
+            },
+            on_conflict='user_id'
+        ).execute()
         
         return True
     except Exception as e:
@@ -200,12 +203,15 @@ def save_check_schedule(user_id: str, check_time: str, enabled: bool) -> bool:
         return False
     
     try:
-        client.table('user_settings').upsert({
-            'user_id': user_id,
-            'check_time': check_time,
-            'schedule_enabled': enabled,
-            'updated_at': datetime.now(pytz.UTC).isoformat()
-        }).execute()
+        client.table('user_settings').upsert(
+            {
+                'user_id': user_id,
+                'check_time': check_time,
+                'schedule_enabled': enabled,
+                'updated_at': datetime.now(pytz.UTC).isoformat()
+            },
+            on_conflict='user_id'
+        ).execute()
         
         return True
     except Exception as e:
