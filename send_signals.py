@@ -284,14 +284,25 @@ def get_all_enabled_users():
     
     response = client.table('user_settings').select('*').execute()
     
+    print(f"  DEBUG: Found {len(response.data)} total rows in user_settings")
+    
     users_to_notify = []
     
     for row in response.data:
+        user_id = row.get('user_id')
         automation = row.get('automation_settings')
+        print(f"  DEBUG: User {user_id[:8]}... automation_settings type={type(automation).__name__}, value={automation}")
+        
         if not automation:
+            print(f"  DEBUG: Skipping - no automation settings")
             continue
-            
-        settings = json.loads(automation) if isinstance(automation, str) else automation
+        
+        try:
+            settings = json.loads(automation) if isinstance(automation, str) else automation
+            print(f"  DEBUG: Parsed settings: email_enabled={settings.get('email_enabled')}, email={settings.get('notification_email')}")
+        except Exception as e:
+            print(f"  DEBUG: Failed to parse automation settings: {e}")
+            continue
         
         # Check if enabled (ignore time for test mode)
         if settings.get('email_enabled'):
@@ -304,6 +315,11 @@ def get_all_enabled_users():
                     'notify_buy_only': settings.get('notify_buy_only', False),
                     'ticker_settings': json.loads(row.get('ticker_settings', '{}')) if row.get('ticker_settings') else {}
                 })
+                print(f"  DEBUG: Added user to notify list")
+            else:
+                print(f"  DEBUG: Skipping - no notification email")
+        else:
+            print(f"  DEBUG: Skipping - email not enabled")
     
     return users_to_notify
 
