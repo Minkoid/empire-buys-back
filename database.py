@@ -314,11 +314,14 @@ def save_automation_settings(user_id: str, settings: Dict) -> bool:
             'notify_buy_only': settings.get('notify_buy_only', False),
         })
         
-        client.table('user_settings').upsert({
-            'user_id': user_id,
-            'automation_settings': settings_json,
-            'updated_at': datetime.now(pytz.UTC).isoformat()
-        }).execute()
+        client.table('user_settings').upsert(
+            {
+                'user_id': user_id,
+                'automation_settings': settings_json,
+                'updated_at': datetime.now(pytz.UTC).isoformat()
+            },
+            on_conflict='user_id'
+        ).execute()
         
         return True
     except Exception as e:
