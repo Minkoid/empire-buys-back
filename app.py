@@ -2171,10 +2171,34 @@ def show_changelog():
     # Version entries - newest first
     changelog_entries = [
         {
+            "version": "1.6.0",
+            "date": "2026-02-25",
+            "technical": "Added send_signals.py script with GitHub Actions workflow. Runs every 15 minutes, fetches users from Supabase, calculates ATH and Daily signals, sends via Resend API. Added RLS policy for service access.",
+            "user": "Automated email notifications are now LIVE! Set your preferred time on the Automation page and receive daily signal summaries straight to your inbox. No more manual checking required."
+        },
+        {
+            "version": "1.5.1",
+            "date": "2026-02-25",
+            "technical": "Fixed upsert on_conflict for save_ticker_settings and save_check_schedule functions in database.py to prevent duplicate key violations.",
+            "user": "Fixed 'duplicate key' error when saving settings on the Signal Dashboard page."
+        },
+        {
+            "version": "1.5.0",
+            "date": "2026-02-25",
+            "technical": "Rebranded from 'S&S Analytics' to 'Snowy & Saunders Analytics'. Changed font from Georgia to Roboto (imported from Google Fonts). Updated all headers, emails, and branding throughout.",
+            "user": "Fresh new look! The app has been rebranded to 'Snowy & Saunders Analytics' with a clean, professional Roboto font."
+        },
+        {
+            "version": "1.4.1",
+            "date": "2026-02-25",
+            "technical": "Replaced Telegram integration with Resend email API. Simplified Automation page UI for email setup. Added signal type selection (ATH/Daily) and buy-only notification option.",
+            "user": "Switched from Telegram to email notifications for easier setup. Just enter your email address and choose which signal types you want to receive."
+        },
+        {
             "version": "1.4.0",
-            "date": "2026-01-30",
-            "technical": "Added show_automation() function with Telegram bot setup UI. Database functions for storing automation_settings, telegram_bot_token, telegram_chat_id. Test connection feature sends live Telegram message.",
-            "user": "New Automation page! Set up Telegram notifications to receive daily BUY/SELL/HOLD signals on your phone. Step-by-step guide to create a bot and connect it. Coming soon: automated daily sends at your scheduled time."
+            "date": "2026-02-13",
+            "technical": "Added show_automation() function with notification setup UI. Database functions for storing automation_settings.",
+            "user": "New Automation page! Configure your notification preferences and schedule when you want to receive your daily signal updates."
         },
         {
             "version": "1.2.4",
