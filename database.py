@@ -299,16 +299,16 @@ def save_automation_settings(user_id: str, settings: Dict) -> bool:
     
     Args:
         user_id: The user's ID
-        settings: Dict with telegram_enabled, telegram_bot_token, telegram_chat_id, etc.
+        settings: Dict with email_enabled, notification_email, etc.
     """
     client = get_supabase_client()
     if not client:
         return False
     
     try:
-        # Separate sensitive token from other settings
         settings_json = json.dumps({
-            'telegram_enabled': settings.get('telegram_enabled', False),
+            'email_enabled': settings.get('email_enabled', False),
+            'notification_email': settings.get('notification_email', ''),
             'daily_signal_time': settings.get('daily_signal_time', '20:30'),
             'signal_types': settings.get('signal_types', ['ATH', 'Daily']),
             'notify_buy_only': settings.get('notify_buy_only', False),
@@ -317,8 +317,6 @@ def save_automation_settings(user_id: str, settings: Dict) -> bool:
         client.table('user_settings').upsert({
             'user_id': user_id,
             'automation_settings': settings_json,
-            'telegram_bot_token': settings.get('telegram_bot_token', ''),
-            'telegram_chat_id': settings.get('telegram_chat_id', ''),
             'updated_at': datetime.now(pytz.UTC).isoformat()
         }).execute()
         
@@ -336,9 +334,8 @@ def load_automation_settings(user_id: str) -> Dict:
     client = get_supabase_client()
     if not client:
         return {
-            'telegram_enabled': False,
-            'telegram_bot_token': '',
-            'telegram_chat_id': '',
+            'email_enabled': False,
+            'notification_email': '',
             'daily_signal_time': '20:30',
             'signal_types': ['ATH', 'Daily'],
             'notify_buy_only': False
@@ -346,44 +343,27 @@ def load_automation_settings(user_id: str) -> Dict:
     
     try:
         response = client.table('user_settings').select(
-            'automation_settings, telegram_bot_token, telegram_chat_id'
+            'automation_settings'
         ).eq('user_id', user_id).execute()
         
         if response.data and len(response.data) > 0:
             row = response.data[0]
             settings_json = row.get('automation_settings')
             
-            result = {
-                'telegram_bot_token': row.get('telegram_bot_token', ''),
-                'telegram_chat_id': row.get('telegram_chat_id', ''),
-            }
-            
             if settings_json:
-                parsed = json.loads(settings_json)
-                result.update(parsed)
-            else:
-                result.update({
-                    'telegram_enabled': False,
-                    'daily_signal_time': '20:30',
-                    'signal_types': ['ATH', 'Daily'],
-                    'notify_buy_only': False
-                })
+                return json.loads(settings_json)
             
-            return result
-        
         return {
-            'telegram_enabled': False,
-            'telegram_bot_token': '',
-            'telegram_chat_id': '',
+            'email_enabled': False,
+            'notification_email': '',
             'daily_signal_time': '20:30',
             'signal_types': ['ATH', 'Daily'],
             'notify_buy_only': False
         }
     except:
         return {
-            'telegram_enabled': False,
-            'telegram_bot_token': '',
-            'telegram_chat_id': '',
+            'email_enabled': False,
+            'notification_email': '',
             'daily_signal_time': '20:30',
             'signal_types': ['ATH', 'Daily'],
             'notify_buy_only': False

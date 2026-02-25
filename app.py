@@ -1921,7 +1921,7 @@ def show_daily_signals():
 
 
 def show_automation():
-    """Display the Automation settings page for Telegram and scheduled notifications."""
+    """Display the Automation settings page for email notifications."""
     import pytz
     from datetime import datetime
     
@@ -1936,7 +1936,7 @@ def show_automation():
         db_available = False
         def save_automation_settings(uid, data): return False
         def load_automation_settings(uid): return {
-            'telegram_enabled': False, 'telegram_bot_token': '', 'telegram_chat_id': '',
+            'email_enabled': False, 'notification_email': '',
             'daily_signal_time': '20:30', 'signal_types': ['ATH', 'Daily'], 'notify_buy_only': False
         }
     
@@ -1946,17 +1946,14 @@ def show_automation():
     if 'automation_settings' not in st.session_state:
         if db_available and user:
             loaded = load_automation_settings(user.id)
-            loaded['test_message_sent'] = False
             st.session_state['automation_settings'] = loaded
         else:
             st.session_state['automation_settings'] = {
-                'telegram_enabled': False,
-                'telegram_bot_token': '',
-                'telegram_chat_id': '',
+                'email_enabled': False,
+                'notification_email': user.email if user else '',
                 'daily_signal_time': '20:30',
                 'signal_types': ['ATH', 'Daily'],
-                'notify_buy_only': False,
-                'test_message_sent': False
+                'notify_buy_only': False
             }
     
     # Header row
@@ -1979,24 +1976,24 @@ def show_automation():
     <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤖</div>
         <h1 class="app-title">Automation</h1>
-        <p class="app-subtitle">Set up notifications and scheduled signal checks</p>
+        <p class="app-subtitle">Set up email notifications for daily signals</p>
     </div>
     """, unsafe_allow_html=True)
     
     # Status overview
     settings = st.session_state['automation_settings']
-    telegram_configured = bool(settings.get('telegram_bot_token') and settings.get('telegram_chat_id'))
+    email_configured = bool(settings.get('notification_email'))
     
-    status_color = "#22c55e" if telegram_configured and settings.get('telegram_enabled') else "#f59e0b" if telegram_configured else "#ef4444"
-    status_text = "Active" if telegram_configured and settings.get('telegram_enabled') else "Configured (Disabled)" if telegram_configured else "Not Configured"
+    status_color = "#22c55e" if email_configured and settings.get('email_enabled') else "#f59e0b" if email_configured else "#ef4444"
+    status_text = "Active" if email_configured and settings.get('email_enabled') else "Configured (Disabled)" if email_configured else "Not Configured"
     
     st.markdown(f"""
     <div style="background: linear-gradient(145deg, #232a33 0%, #1a1f26 100%); border: 1px solid #334155; 
                 border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
             <div>
-                <span style="font-size: 1.1rem; font-weight: 600; color: #f8fafc;">Telegram Notifications</span>
-                <p style="color: #cbd5e1; margin: 0.25rem 0 0 0; font-size: 0.85rem;">Receive daily BUY/SELL/HOLD signals on your phone</p>
+                <span style="font-size: 1.1rem; font-weight: 600; color: #f8fafc;">Email Notifications</span>
+                <p style="color: #cbd5e1; margin: 0.25rem 0 0 0; font-size: 0.85rem;">Receive daily BUY/SELL/HOLD signals in your inbox</p>
             </div>
             <div style="background: {status_color}20; border: 1px solid {status_color}; border-radius: 20px; padding: 0.25rem 0.75rem;">
                 <span style="color: {status_color}; font-size: 0.8rem; font-weight: 600;">{status_text}</span>
@@ -2005,82 +2002,40 @@ def show_automation():
     </div>
     """, unsafe_allow_html=True)
     
-    # Telegram Setup Section
-    st.markdown('<div class="section-header">📱 Telegram Setup</div>', unsafe_allow_html=True)
+    # Email Setup Section
+    st.markdown('<div class="section-header">📧 Email Setup</div>', unsafe_allow_html=True)
     
-    with st.expander("📖 How to set up Telegram notifications", expanded=not telegram_configured):
-        st.markdown("""
-        **Step 1: Create a Telegram Bot**
-        1. Open Telegram and search for **@BotFather**
-        2. Send `/newbot` and follow the prompts
-        3. Choose a name (e.g., "S&S Signals Bot")
-        4. Copy the **API Token** (looks like `123456789:ABCdefGHI...`)
-        
-        **Step 2: Get Your Chat ID**
-        1. Search for **@userinfobot** in Telegram
-        2. Send it any message
-        3. It will reply with your **Chat ID** (a number like `123456789`)
-        
-        **Step 3: Enter Details Below**
-        - Paste the Bot Token and Chat ID
-        - Click "Test Connection" to verify
-        - Enable notifications and save
-        
-        **That's it!** You'll receive daily signal summaries at your scheduled time.
-        """)
+    st.markdown("""
+    <div style="background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <p style="color: #cbd5e1; margin: 0; font-size: 0.9rem;">
+            Enter the email address where you want to receive daily signal notifications. 
+            By default, this is your login email.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.markdown("")
     
     # Configuration inputs
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([2, 1])
     
     with col1:
-        bot_token = st.text_input(
-            "Bot Token",
-            value=settings.get('telegram_bot_token', ''),
-            type="password",
-            help="The API token from BotFather (starts with numbers, contains a colon)",
-            placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+        notification_email = st.text_input(
+            "Notification Email",
+            value=settings.get('notification_email', user.email if user else ''),
+            help="Email address for receiving daily signals",
+            placeholder="your@email.com"
         )
-        if bot_token != settings.get('telegram_bot_token'):
-            st.session_state['automation_settings']['telegram_bot_token'] = bot_token
+        if notification_email != settings.get('notification_email'):
+            st.session_state['automation_settings']['notification_email'] = notification_email
     
     with col2:
-        chat_id = st.text_input(
-            "Chat ID",
-            value=settings.get('telegram_chat_id', ''),
-            help="Your personal chat ID from @userinfobot",
-            placeholder="123456789"
-        )
-        if chat_id != settings.get('telegram_chat_id'):
-            st.session_state['automation_settings']['telegram_chat_id'] = chat_id
-    
-    # Test connection button
-    test_col1, test_col2, test_col3 = st.columns([1, 1, 2])
-    
-    with test_col1:
-        if st.button("🧪 Test Connection", use_container_width=True, disabled=not (bot_token and chat_id)):
-            try:
-                import requests
-                url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-                payload = {
-                    "chat_id": chat_id,
-                    "text": "✅ S&S Analytics connected successfully!\n\nYou'll receive daily signal notifications here.",
-                    "parse_mode": "HTML"
-                }
-                response = requests.post(url, json=payload, timeout=10)
-                if response.status_code == 200:
-                    st.success("Message sent! Check your Telegram.")
-                    st.session_state['automation_settings']['test_message_sent'] = True
-                else:
-                    error = response.json().get('description', 'Unknown error')
-                    st.error(f"Failed: {error}")
-            except Exception as e:
-                st.error(f"Connection error: {str(e)}")
-    
-    with test_col2:
-        if settings.get('test_message_sent'):
-            st.markdown("<span style='color: #22c55e;'>✓ Verified</span>", unsafe_allow_html=True)
+        st.markdown("")
+        st.markdown("")
+        if st.button("📧 Use Login Email", use_container_width=True):
+            if user:
+                st.session_state['automation_settings']['notification_email'] = user.email
+                st.rerun()
     
     st.markdown("")
     st.markdown("---")
@@ -2091,13 +2046,13 @@ def show_automation():
     sched_col1, sched_col2, sched_col3 = st.columns([1, 1, 1])
     
     with sched_col1:
-        telegram_enabled = st.toggle(
+        email_enabled = st.toggle(
             "Enable daily notifications",
-            value=settings.get('telegram_enabled', False),
+            value=settings.get('email_enabled', False),
             help="Send signal summary at scheduled time"
         )
-        if telegram_enabled != settings.get('telegram_enabled'):
-            st.session_state['automation_settings']['telegram_enabled'] = telegram_enabled
+        if email_enabled != settings.get('email_enabled'):
+            st.session_state['automation_settings']['email_enabled'] = email_enabled
     
     with sched_col2:
         signal_time = st.time_input(
@@ -2142,12 +2097,12 @@ def show_automation():
     # Save button
     save_col1, save_col2, save_col3 = st.columns([1, 1, 1])
     with save_col2:
-        if st.button("💾 Save Automation Settings", type="primary", use_container_width=True):
+        if st.button("💾 Save Notification Settings", type="primary", use_container_width=True):
             if db_available and user:
                 if save_automation_settings(user.id, st.session_state['automation_settings']):
                     st.success("Settings saved to your account!")
-                    if settings.get('telegram_enabled') and telegram_configured:
-                        st.info("Telegram notifications are enabled. Automated daily sends will be available once server scheduling is configured.")
+                    if settings.get('email_enabled') and email_configured:
+                        st.info("Email notifications enabled! Automated daily sends coming soon.")
                 else:
                     st.error("Failed to save settings")
             else:
@@ -2156,14 +2111,27 @@ def show_automation():
     st.markdown("")
     st.markdown("---")
     
+    # Implementation Status
+    st.markdown('<div class="section-header">📋 Status</div>', unsafe_allow_html=True)
+    
+    st.markdown("""
+    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid #f59e0b; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+        <p style="color: #fbbf24; font-weight: 600; margin: 0 0 0.5rem 0;">🚧 Coming Soon</p>
+        <p style="color: #cbd5e1; margin: 0; font-size: 0.9rem;">
+            Automated email sending is in development. Your settings are saved and will be used once the email service is configured.
+            For now, check signals manually on the Signals or Daily Signals pages.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
     # Future Automation Section
-    st.markdown('<div class="section-header">🚀 Coming Soon</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🚀 Future Features</div>', unsafe_allow_html=True)
     
     future_features = [
         ("📊 Paper Trading", "Connect to Alpaca API for simulated trading based on signals"),
         ("📈 Portfolio Tracking", "Track your positions and P&L across all tickers"),
         ("🔔 Price Alerts", "Get notified when specific price levels are hit"),
-        ("📧 Email Reports", "Weekly performance summary delivered to your inbox"),
+        ("📱 Telegram/SMS", "Alternative notification channels"),
     ]
     
     for title, desc in future_features:
@@ -2179,7 +2147,7 @@ def show_automation():
     st.markdown("""
     <div style="text-align: center; margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #334155;">
         <p style="color: #cbd5e1; font-size: 0.8rem;">
-            💡 Telegram is free to use. Create a bot in 2 minutes and never miss a signal.
+            💡 Your notification preferences are saved. You'll receive daily signals once the email service is live.
         </p>
     </div>
     """, unsafe_allow_html=True)
