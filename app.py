@@ -2171,10 +2171,16 @@ def show_changelog():
     # Version entries - newest first
     changelog_entries = [
         {
+            "version": "1.6.1",
+            "date": "2026-02-25",
+            "technical": "Fixed CAGR calculation discrepancy between Strategy Finder and Manual Backtest pages. The issue was in run_backtest_fast() using start_idx = max(ema_period, atr_period, trend_ma_period) while run_backtest() used start_idx = max(ema_period, atr_period). With default trend_ma_period=50 and ema_period=20, Strategy Finder was skipping 30 more trading days before starting, resulting in different CAGR values. Now both use the same formula: max(ema_period, atr_period). TO REVERT: Change line 552 in backtest_engine.py back to include config.trend_ma_period in the max() call.",
+            "user": "Fixed: Strategy Finder and Manual Backtest now show matching CAGR values when using the same parameters. Previously, the Strategy Finder was calculating slightly different results because it waited longer before starting to trade. Both pages now use identical calculation logic. If you notice any unexpected changes in your Strategy Finder results, please report them - this change can be reverted if needed."
+        },
+        {
             "version": "1.6.0",
             "date": "2026-02-25",
             "technical": "Added send_signals.py script with GitHub Actions workflow. Runs every 15 minutes, fetches users from Supabase, calculates ATH and Daily signals, sends via Resend API. Added RLS policy for service access.",
-            "user": "Automated email notifications are now LIVE! Set your preferred time on the Automation page and receive daily signal summaries straight to your inbox. No more manual checking required."
+            "user": "Automated email notifications are now LIVE! Set your preferred time on the Notifications page and receive daily signal summaries straight to your inbox. No more manual checking required."
         },
         {
             "version": "1.5.1",

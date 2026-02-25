@@ -549,7 +549,7 @@ def run_backtest_fast(df_prepared: pd.DataFrame, config: BacktestConfig) -> dict
     trend_mas = df[trend_col].values
     dates = df.index
     
-    start_idx = max(config.ema_period, config.atr_period, config.trend_ma_period)
+    start_idx = max(config.ema_period, config.atr_period)
     current_ath = closes[0]
     
     for i in range(len(closes)):
