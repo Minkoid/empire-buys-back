@@ -7,6 +7,15 @@ on:
   
   # Allow manual trigger for testing
   workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode - send to all enabled users regardless of time'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
 
 jobs:
   send-signals:
@@ -30,5 +39,6 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          TEST_MODE: ${{ github.event.inputs.test_mode || 'false' }}
         run: |
           python send_signals.py

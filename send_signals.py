@@ -278,11 +278,46 @@ def send_email(to_email: str, subject: str, html_body: str) -> bool:
         return False
 
 
+def get_all_enabled_users():
+    """Get all users with email notifications enabled (ignores time)."""
+    client = get_supabase_client()
+    
+    response = client.table('user_settings').select('*').execute()
+    
+    users_to_notify = []
+    
+    for row in response.data:
+        automation = row.get('automation_settings')
+        if not automation:
+            continue
+            
+        settings = json.loads(automation) if isinstance(automation, str) else automation
+        
+        # Check if enabled (ignore time for test mode)
+        if settings.get('email_enabled'):
+            notification_email = settings.get('notification_email')
+            if notification_email:
+                users_to_notify.append({
+                    'user_id': row.get('user_id'),
+                    'email': notification_email,
+                    'signal_types': settings.get('signal_types', ['ATH', 'Daily']),
+                    'notify_buy_only': settings.get('notify_buy_only', False),
+                    'ticker_settings': json.loads(row.get('ticker_settings', '{}')) if row.get('ticker_settings') else {}
+                })
+    
+    return users_to_notify
+
+
 def main():
     """Main entry point for scheduled runs."""
+    import sys
+    
     print("=" * 50)
     print("Snowy & Saunders Analytics - Signal Email Sender")
     print("=" * 50)
+    
+    # Check for test mode
+    test_mode = '--test' in sys.argv or os.environ.get('TEST_MODE') == 'true'
     
     # Get current UK time
     uk_tz = pytz.timezone('Europe/London')
@@ -290,10 +325,14 @@ def main():
     current_time = now.strftime('%H:%M')
     
     print(f"Current UK time: {now.strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"Looking for users scheduled at: {current_time}")
     
-    # Get users to notify
-    users = get_users_for_notification(current_time)
+    if test_mode:
+        print("*** TEST MODE - Sending to all enabled users regardless of time ***")
+        users = get_all_enabled_users()
+    else:
+        print(f"Looking for users scheduled at: {current_time}")
+        users = get_users_for_notification(current_time)
+    
     print(f"Found {len(users)} user(s) to notify")
     
     if not users:
