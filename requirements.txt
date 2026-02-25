@@ -8,5 +8,4 @@ plotly>=5.18.0
 yfinance>=0.2.30
 pytz>=2023.3
 supabase>=2.0.0
-
-
+resend>=0.7.0
