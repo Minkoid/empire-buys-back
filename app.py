@@ -1973,8 +1973,8 @@ def show_automation():
     
     st.markdown("""
     <div style="text-align: center; padding: 1rem 0 1.5rem 0;">
-        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🤖</div>
-        <h1 class="app-title">Automation</h1>
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔔</div>
+        <h1 class="app-title">Notifications</h1>
         <p class="app-subtitle">Set up email notifications for daily signals</p>
     </div>
     """, unsafe_allow_html=True)
@@ -3066,7 +3066,7 @@ def main():
             st.rerun()
     
     with header_col8:
-        if st.button("🤖 Auto", use_container_width=True, help="Set up Telegram notifications and automation"):
+        if st.button("🔔 Notify", use_container_width=True, help="Set up email notifications"):
             st.session_state['page'] = 'automation'
             st.rerun()
     
