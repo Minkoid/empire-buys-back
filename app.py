@@ -34,6 +34,7 @@ AVAILABLE_TICKERS = {
     "TQQQ": "3x Leveraged Nasdaq-100",
     "SOXL": "3x Semiconductors",
     "ARKK": "ARK Innovation ETF",
+    "EEM": "Emerging Markets ETF",
     "GLD": "Gold ETF",
     "SLV": "Silver ETF",
     "^N225": "Nikkei 225 (Japan)",
